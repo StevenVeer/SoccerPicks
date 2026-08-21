@@ -28,6 +28,24 @@ function drawBackground(c, W, H) {
   c.restore();
 }
 
+function drawProfileAvatar(c, x, y, radius) {
+  c.save();
+  c.beginPath();
+  c.arc(x, y, radius, 0, Math.PI * 2);
+  c.fillStyle = '#E8B23D';
+  c.fill();
+  c.lineWidth = 2;
+  c.strokeStyle = '#F4F2E8';
+  c.stroke();
+
+  c.font = `${radius * 1.3}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('⚽', x - radius * 0.2, y + radius * 0.2);
+
+  c.restore();
+}
+
 function drawHeader(c, W, project, progress) {
   const alpha = progress;
   const dy = 30 * (1 - progress);
@@ -36,9 +54,10 @@ function drawHeader(c, W, project, progress) {
   c.translate(0, -dy);
   c.textAlign = 'center';
 
+  drawProfileAvatar(c, W / 2 - 150, 137, 20);
   c.fillStyle = '#E8B23D';
-  c.font = '600 26px Oswald';
-  c.fillText((project.handle || '@youraccount').toUpperCase(), W / 2, 150);
+  c.font = '600 30px Oswald';
+  c.fillText('@SOCCER_PICKS_144', W / 2 + 20, 150);
 
   const titleText = (project.title || 'MATCHDAY PICKS').toUpperCase();
   const titleSize = fitFontSize(c, titleText, 900, 76, 'Oswald', 700);

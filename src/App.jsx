@@ -10,7 +10,7 @@ function defaultProjects() {
     {
       id: idCounter,
       title: 'Matchday Picks',
-      handle: '@youraccount',
+      handle: 'soccer_picks_144',
       disclaimer: '18+ · Bet responsibly',
       picks: [
         { match: 'Ajax - PSV', pick: 'Ajax wins', odds: 1.85 },
@@ -39,7 +39,7 @@ export default function App() {
         {
           id: idCounter,
           title: `Video ${prev.length + 1}`,
-          handle: last ? last.handle : '@youraccount',
+          handle: 'soccer_picks_144',
           disclaimer: last ? last.disclaimer : '18+ · Bet responsibly',
           picks: [],
         },

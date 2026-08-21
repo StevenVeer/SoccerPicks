@@ -158,6 +158,31 @@ button.primary.small {
   color: var(--gold);
 }
 
+.account-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.account-field input {
+  flex: 1;
+  margin-bottom: 14px;
+}
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 14px;
+  background: var(--gold);
+  border: 2px solid var(--chalk);
+  border-radius: 50%;
+  color: var(--pitch-dark);
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 .project-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);

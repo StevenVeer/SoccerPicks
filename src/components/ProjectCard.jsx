@@ -9,6 +9,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   ref
 ) {
   const canvasRef = useRef(null);
+  const previewFrameRef = useRef(null);
   const [matchInput, setMatchInput] = useState('');
   const [pickInput, setPickInput] = useState('');
   const [oddsInput, setOddsInput] = useState('');
@@ -16,13 +17,14 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [status, setStatus] = useState('idle'); // idle | recording | done | error
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   // Redraw the static preview whenever the project data changes.
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || status === 'recording') return;
+    if (!canvas || status === 'recording' || isPreviewing) return;
     renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
-  }, [project, status]);
+  }, [project, status, isPreviewing]);
 
   // Redraw once web fonts are actually loaded (first paint can happen before that).
   useEffect(() => {
@@ -38,6 +40,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   useEffect(() => {
     return () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl);
+      if (previewFrameRef.current) cancelAnimationFrame(previewFrameRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,6 +72,31 @@ const ProjectCard = forwardRef(function ProjectCard(
 
   function removePick(index) {
     onChange({ ...project, picks: project.picks.filter((_, i) => i !== index) });
+  }
+
+  function playPreview() {
+    if (isPreviewing || status === 'recording') return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const total = timeline(project.picks.length).total;
+    const start = performance.now();
+
+    setIsPreviewing(true);
+
+    function frame(now) {
+      const elapsed = now - start;
+      renderCanvas(ctx, elapsed, project);
+      if (elapsed < total) {
+        previewFrameRef.current = requestAnimationFrame(frame);
+      } else {
+        previewFrameRef.current = null;
+        setIsPreviewing(false);
+      }
+    }
+
+    previewFrameRef.current = requestAnimationFrame(frame);
   }
 
   async function generate() {
@@ -131,13 +159,16 @@ const ProjectCard = forwardRef(function ProjectCard(
 
       <div className="project-body">
         <div className="project-form">
-          <label htmlFor={`handle-${project.id}`}>Account (@handle)</label>
-          <input
-            id={`handle-${project.id}`}
-            type="text"
-            value={project.handle}
-            onChange={(e) => updateField('handle', e.target.value)}
-          />
+          <label htmlFor={`handle-${project.id}`}>Account name</label>
+          <div className="account-field">
+            <div className="profile-avatar" aria-hidden="true">⚽</div>
+            <input
+              id={`handle-${project.id}`}
+              type="text"
+              value="soccer_picks_144"
+              readOnly
+            />
+          </div>
           <label htmlFor={`disclaimer-${project.id}`}>Footer disclaimer</label>
           <input
             id={`disclaimer-${project.id}`}
@@ -221,7 +252,16 @@ const ProjectCard = forwardRef(function ProjectCard(
             </div>
           )}
 
-          <button type="button" className="primary" onClick={generate} disabled={status === 'recording'}>
+          <button
+            type="button"
+            className="primary outline"
+            onClick={playPreview}
+            disabled={isPreviewing || status === 'recording'}
+          >
+            {isPreviewing ? 'Playing preview…' : 'Play preview'}
+          </button>
+
+          <button type="button" className="primary" onClick={generate} disabled={status === 'recording' || isPreviewing}>
             {status === 'recording' ? 'Recording…' : `Generate video (${duration}s)`}
           </button>
 
