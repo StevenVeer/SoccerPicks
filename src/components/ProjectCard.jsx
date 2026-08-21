@@ -59,6 +59,11 @@ const ProjectCard = forwardRef(function ProjectCard(
     onChange({ ...project, [field]: value });
   }
 
+  function formatOddsInput() {
+    const odds = parseFloat(oddsInput);
+    if (!Number.isNaN(odds)) setOddsInput(odds.toFixed(2));
+  }
+
   function addPick(e) {
     e.preventDefault();
     setError('');
@@ -261,6 +266,7 @@ const ProjectCard = forwardRef(function ProjectCard(
                   placeholder="1.85"
                   value={oddsInput}
                   onChange={(e) => setOddsInput(e.target.value)}
+                  onBlur={formatOddsInput}
                 />
               </div>
               <div className="add-btn-wrap">
