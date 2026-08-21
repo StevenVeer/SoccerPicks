@@ -4,12 +4,15 @@ import { timeline } from '../lib/timeline';
 import { recordCanvasVideo } from '../lib/videoRecorder';
 import { dateStamp, slugify } from '../lib/utils';
 
-const DESCRIPTION = `⚽️ 3 football picks I’m backing today 👀
+function getDescription(pickCount) {
+  const pickLabel = pickCount === 1 ? 'pick' : 'picks';
+  return `⚽️ ${pickCount} football ${pickLabel} I’m backing today 👀
 
 Which one are you taking? 👇
 Follow for daily football predictions & value bets 📈
 
 #football #footballtips #footballpredictions #bettingtips #soccer #soccerbets #valuebets #footballbetting #bettingpicks #sportsbetting`;
+}
 
 const ProjectCard = forwardRef(function ProjectCard(
   { project, onChange, onRemove, onDuplicate, onVideoReady },
@@ -113,7 +116,7 @@ const ProjectCard = forwardRef(function ProjectCard(
 
   async function copyDescription() {
     try {
-      await navigator.clipboard.writeText(DESCRIPTION);
+      await navigator.clipboard.writeText(getDescription(project.picks.length));
       setDescriptionCopied(true);
       window.setTimeout(() => setDescriptionCopied(false), 1800);
     } catch {
@@ -314,7 +317,7 @@ const ProjectCard = forwardRef(function ProjectCard(
                 {descriptionCopied ? 'Copied' : 'Copy'}
               </button>
             </div>
-            <div className="description-text">{DESCRIPTION}</div>
+            <div className="description-text">{getDescription(project.picks.length)}</div>
           </div>
         </div>
 
