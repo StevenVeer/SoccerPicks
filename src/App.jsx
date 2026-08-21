@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ProjectCard from './components/ProjectCard.jsx';
 import { dateStamp, slugify } from './lib/utils';
 
 let idCounter = 1;
+const PROJECTS_STORAGE_KEY = 'soccer-picks-projects';
 
 function defaultProjects() {
   idCounter = 1;
@@ -12,19 +13,31 @@ function defaultProjects() {
       title: 'Matchday Picks',
       handle: 'soccer_picks_144',
       disclaimer: '18+ · Bet responsibly',
-      picks: [
-        { match: 'Ajax - PSV', pick: 'Ajax wins', odds: 1.85 },
-        { match: 'Feyenoord - AZ', pick: 'Over 2.5 goals', odds: 1.65 },
-      ],
+      picks: [],
     },
   ];
 }
 
 export default function App() {
-  const [projects, setProjects] = useState(defaultProjects);
+  const [projects, setProjects] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY));
+      if (Array.isArray(stored)) {
+        idCounter = stored.reduce((maxId, project) => Math.max(maxId, Number(project.id) || 0), 1);
+        return stored;
+      }
+    } catch {
+      // Fall back to a clean project when saved data is invalid.
+    }
+    return defaultProjects();
+  });
   const [videos, setVideos] = useState({}); // projectId -> { blob, url }
   const [zipping, setZipping] = useState(false);
   const cardRefs = useRef({});
+
+  useEffect(() => {
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+  }, [projects]);
 
   function updateProject(id, updated) {
     setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));

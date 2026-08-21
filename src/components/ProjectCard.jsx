@@ -3,6 +3,7 @@ import { renderCanvas, PREVIEW_T } from '../lib/canvasRenderer';
 import { timeline } from '../lib/timeline';
 import { recordCanvasVideo } from '../lib/videoRecorder';
 import { dateStamp, slugify } from '../lib/utils';
+import MatchPicker from './MatchPicker.jsx';
 
 function getDescription(pickCount) {
   const pickLabel = pickCount === 1 ? 'pick' : 'picks';
@@ -91,8 +92,21 @@ const ProjectCard = forwardRef(function ProjectCard(
     setOddsInput('');
   }
 
+  function addLivePick(pick) {
+    setError('');
+    if (project.picks.length >= 8) {
+      setError('You have reached the maximum of 8 picks.');
+      return;
+    }
+    onChange({ ...project, picks: [...project.picks, pick] });
+  }
+
   function removePick(index) {
     onChange({ ...project, picks: project.picks.filter((_, i) => i !== index) });
+  }
+
+  function clearPicks() {
+    onChange({ ...project, picks: [] });
   }
 
   function reorderPick(targetIndex) {
@@ -227,6 +241,8 @@ const ProjectCard = forwardRef(function ProjectCard(
             onChange={(e) => updateField('disclaimer', e.target.value)}
           />
 
+          <MatchPicker onAddPick={addLivePick} disabled={project.picks.length >= 8} />
+
           <form onSubmit={addPick} className="pick-form">
             <label htmlFor={`match-${project.id}`}>Match</label>
             <div className="match-teams">
@@ -281,6 +297,12 @@ const ProjectCard = forwardRef(function ProjectCard(
           </form>
           {error && <div className="error">{error}</div>}
 
+          <div className="pick-list-heading">
+            <span>Added picks</span>
+            <button type="button" className="clear-picks" onClick={clearPicks} disabled={project.picks.length === 0}>
+              Clear all
+            </button>
+          </div>
           <div className="pick-list">
             {project.picks.length === 0 && <div className="empty">No picks added yet.</div>}
             {project.picks.map((p, i) => (
