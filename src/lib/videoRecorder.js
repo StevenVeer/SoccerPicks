@@ -36,7 +36,7 @@ export function recordCanvasVideo(canvas, project, timelineFn, renderFn, onProgr
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data);
     };
-    recorder.onerror = (e) => reject(e.error || new Error('Video-opname mislukt.'));
+    recorder.onerror = (e) => reject(e.error || new Error('Video recording failed.'));
     recorder.onstop = () => {
       const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
       resolve(blob);

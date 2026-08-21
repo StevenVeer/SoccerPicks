@@ -9,12 +9,12 @@ function defaultProjects() {
   return [
     {
       id: idCounter,
-      title: 'Speeldag Picks',
-      handle: '@jouwaccount',
-      disclaimer: '18+ · Speel bewust',
+      title: 'Matchday Picks',
+      handle: '@youraccount',
+      disclaimer: '18+ · Bet responsibly',
       picks: [
-        { match: 'Ajax - PSV', pick: 'Ajax wint', odds: 1.85 },
-        { match: 'Feyenoord - AZ', pick: 'Over 2.5 doelpunten', odds: 1.65 },
+        { match: 'Ajax - PSV', pick: 'Ajax wins', odds: 1.85 },
+        { match: 'Feyenoord - AZ', pick: 'Over 2.5 goals', odds: 1.65 },
       ],
     },
   ];
@@ -39,8 +39,8 @@ export default function App() {
         {
           id: idCounter,
           title: `Video ${prev.length + 1}`,
-          handle: last ? last.handle : '@jouwaccount',
-          disclaimer: last ? last.disclaimer : '18+ · Speel bewust',
+          handle: last ? last.handle : '@youraccount',
+          disclaimer: last ? last.disclaimer : '18+ · Bet responsibly',
           picks: [],
         },
       ];
@@ -58,7 +58,7 @@ export default function App() {
         {
           ...source,
           id: newId,
-          title: `${source.title} (kopie)`,
+          title: `${source.title} (copy)`,
           picks: source.picks.map((p) => ({ ...p })),
         },
       ];
@@ -128,16 +128,16 @@ export default function App() {
         <div className="eyebrow">TikTok content generator</div>
         <h1>⚽ Soccer Picks Studio</h1>
         <p className="sub">
-          Beheer meerdere video's tegelijk, elk met eigen picks en odds, en genereer ze allemaal in één keer.
+          Manage multiple videos at once, each with its own picks and odds, and generate them all in one go.
         </p>
       </header>
 
       <div className="toolbar">
         <button type="button" className="primary" onClick={addProject}>
-          + Nieuwe video
+          + New video
         </button>
         <button type="button" className="primary" onClick={generateAll} disabled={projects.length === 0}>
-          Genereer alle video's
+          Generate all videos
         </button>
         <button
           type="button"
@@ -145,7 +145,7 @@ export default function App() {
           onClick={downloadAllZip}
           disabled={readyCount === 0 || zipping}
         >
-          {zipping ? 'Zippen…' : `Download alles (.zip) — ${readyCount}/${projects.length}`}
+          {zipping ? 'Creating zip…' : `Download all (.zip) — ${readyCount}/${projects.length}`}
         </button>
       </div>
 
@@ -165,7 +165,7 @@ export default function App() {
         ))}
         {projects.length === 0 && (
           <div className="empty" style={{ gridColumn: '1 / -1', padding: '40px 0' }}>
-            Nog geen video's — klik op "+ Nieuwe video" om te beginnen.
+            No videos yet — click "+ New video" to get started.
           </div>
         )}
       </div>

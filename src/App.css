@@ -98,7 +98,7 @@ button.primary.small {
 
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+  grid-template-columns: 1fr;
   gap: 28px;
 }
 @media (max-width: 640px) {
@@ -160,8 +160,8 @@ button.primary.small {
 
 .project-body {
   display: grid;
-  grid-template-columns: 1fr 240px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 28px;
 }
 @media (max-width: 720px) {
   .project-body {
@@ -201,6 +201,8 @@ input:focus {
 }
 .add-btn-wrap {
   display: flex;
+  align-items: flex-start;
+  padding-top: 19px;
 }
 
 .error {
@@ -284,6 +286,9 @@ input:focus {
   flex-direction: column;
   align-items: center;
 }
+.project-preview button.primary {
+  margin-top: 14px;
+}
 .phone-frame {
   background: #000;
   border-radius: 26px;
@@ -291,7 +296,7 @@ input:focus {
   border: 2px solid rgba(232, 178, 61, 0.35);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   width: 100%;
-  max-width: 220px;
+  max-width: 320px;
 }
 .phone-screen {
   position: relative;
@@ -307,7 +312,7 @@ canvas {
 
 .progress {
   width: 100%;
-  max-width: 220px;
+  max-width: 320px;
   height: 5px;
   background: rgba(244, 242, 232, 0.1);
   border-radius: 4px;
@@ -324,7 +329,7 @@ canvas {
   text-align: center;
   margin-top: 10px;
   width: 100%;
-  max-width: 220px;
+  max-width: 320px;
   background: rgba(232, 178, 61, 0.12);
   border: 1px solid var(--gold);
   color: var(--gold);

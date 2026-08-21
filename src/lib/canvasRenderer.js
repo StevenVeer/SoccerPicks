@@ -38,9 +38,9 @@ function drawHeader(c, W, project, progress) {
 
   c.fillStyle = '#E8B23D';
   c.font = '600 26px Oswald';
-  c.fillText((project.handle || '@jouwaccount').toUpperCase(), W / 2, 150);
+  c.fillText((project.handle || '@youraccount').toUpperCase(), W / 2, 150);
 
-  const titleText = (project.title || 'SPEELDAG PICKS').toUpperCase();
+  const titleText = (project.title || 'MATCHDAY PICKS').toUpperCase();
   const titleSize = fitFontSize(c, titleText, 900, 76, 'Oswald', 700);
   c.fillStyle = '#F4F2E8';
   c.font = `700 ${titleSize}px Oswald`;
@@ -51,7 +51,7 @@ function drawHeader(c, W, project, progress) {
 
   c.fillStyle = 'rgba(244,242,232,0.6)';
   c.font = '500 30px Oswald';
-  c.fillText('⚽ PICKS VAN VANDAAG ⚽', W / 2, 375);
+  c.fillText('⚽ TODAY\'S PICKS ⚽', W / 2, 375);
   c.restore();
 }
 
@@ -148,7 +148,7 @@ function drawParlay(c, y, h, W, total, progress) {
   c.textAlign = 'center';
   c.fillStyle = '#E8B23D';
   c.font = '600 28px Oswald';
-  c.fillText('GECOMBINEERDE ODDS · PARLAY', cx, y + 48);
+  c.fillText('COMBINED ODDS · PARLAY', cx, y + 48);
 
   c.fillStyle = '#F4F2E8';
   c.font = '700 88px "Space Mono", monospace';
@@ -168,10 +168,10 @@ function drawFooter(c, H, W, project, progress) {
   c.textAlign = 'center';
   c.fillStyle = '#E8B23D';
   c.font = '700 34px Oswald';
-  c.fillText('VOLG VOOR MEER PICKS ⚽', W / 2, H - 110);
+  c.fillText('FOLLOW FOR MORE PICKS ⚽', W / 2, H - 110);
   c.fillStyle = 'rgba(244,242,232,0.5)';
   c.font = '400 24px Oswald';
-  c.fillText(project.disclaimer || '18+ · Speel bewust', W / 2, H - 65);
+  c.fillText(project.disclaimer || '18+ · Bet responsibly', W / 2, H - 65);
   c.restore();
 }
 

@@ -54,11 +54,11 @@ const ProjectCard = forwardRef(function ProjectCard(
     const odds = parseFloat(oddsInput);
 
     if (!match || !pickText || Number.isNaN(odds) || odds < 1.01) {
-      setError('Vul een wedstrijd, pick en geldige odds (≥ 1.01) in.');
+      setError('Enter a match, pick, and valid odds (≥ 1.01).');
       return;
     }
     if (project.picks.length >= 8) {
-      setError('Je hebt het maximum van 8 picks bereikt.');
+      setError('You have reached the maximum of 8 picks.');
       return;
     }
     onChange({ ...project, picks: [...project.picks, { match, pick: pickText, odds }] });
@@ -73,7 +73,7 @@ const ProjectCard = forwardRef(function ProjectCard(
 
   async function generate() {
     if (project.picks.length === 0) {
-      setError('Voeg eerst minstens 1 pick toe.');
+      setError('Add at least 1 pick first.');
       return null;
     }
     setError('');
@@ -100,7 +100,7 @@ const ProjectCard = forwardRef(function ProjectCard(
       return blob;
     } catch (err) {
       setStatus('error');
-      setError(err.message || 'Video-opname mislukt.');
+      setError(err.message || 'Video recording failed.');
       return null;
     }
   }
@@ -117,13 +117,13 @@ const ProjectCard = forwardRef(function ProjectCard(
           className="project-title-input"
           value={project.title}
           onChange={(e) => updateField('title', e.target.value)}
-          aria-label="Titel van de video"
+          aria-label="Video title"
         />
         <div className="project-card-actions">
-          <button type="button" onClick={onDuplicate} title="Dupliceren">
+          <button type="button" onClick={onDuplicate} title="Duplicate">
             ⧉
           </button>
-          <button type="button" onClick={onRemove} title="Verwijderen">
+          <button type="button" onClick={onRemove} title="Remove">
             ✕
           </button>
         </div>
@@ -138,7 +138,7 @@ const ProjectCard = forwardRef(function ProjectCard(
             value={project.handle}
             onChange={(e) => updateField('handle', e.target.value)}
           />
-          <label htmlFor={`disclaimer-${project.id}`}>Disclaimer onderaan</label>
+          <label htmlFor={`disclaimer-${project.id}`}>Footer disclaimer</label>
           <input
             id={`disclaimer-${project.id}`}
             type="text"
@@ -147,7 +147,7 @@ const ProjectCard = forwardRef(function ProjectCard(
           />
 
           <form onSubmit={addPick} className="pick-form">
-            <label htmlFor={`match-${project.id}`}>Wedstrijd</label>
+            <label htmlFor={`match-${project.id}`}>Match</label>
             <input
               id={`match-${project.id}`}
               type="text"
@@ -161,7 +161,7 @@ const ProjectCard = forwardRef(function ProjectCard(
                 <input
                   id={`pick-${project.id}`}
                   type="text"
-                  placeholder="Ajax wint"
+                  placeholder="Ajax wins"
                   value={pickInput}
                   onChange={(e) => setPickInput(e.target.value)}
                 />
@@ -188,14 +188,14 @@ const ProjectCard = forwardRef(function ProjectCard(
           {error && <div className="error">{error}</div>}
 
           <div className="pick-list">
-            {project.picks.length === 0 && <div className="empty">Nog geen picks toegevoegd.</div>}
+            {project.picks.length === 0 && <div className="empty">No picks added yet.</div>}
             {project.picks.map((p, i) => (
               <div className="pick-row" key={i}>
                 <div className="info">
                   <b>{p.match}</b>
                   {p.pick} · <span className="odds">{p.odds.toFixed(2)}</span>
                 </div>
-                <button type="button" className="del" onClick={() => removePick(i)} title="Verwijderen">
+                <button type="button" className="del" onClick={() => removePick(i)} title="Remove">
                   ✕
                 </button>
               </div>
@@ -203,7 +203,7 @@ const ProjectCard = forwardRef(function ProjectCard(
           </div>
 
           <div className="parlay-summary">
-            <span>Gecombineerde odds ({project.picks.length}/8)</span>
+            <span>Combined odds ({project.picks.length}/8)</span>
             <b>{project.picks.length ? parlay.toFixed(2) : '—'}</b>
           </div>
         </div>
@@ -222,12 +222,12 @@ const ProjectCard = forwardRef(function ProjectCard(
           )}
 
           <button type="button" className="primary" onClick={generate} disabled={status === 'recording'}>
-            {status === 'recording' ? 'Bezig met opnemen…' : `Video genereren (${duration}s)`}
+            {status === 'recording' ? 'Recording…' : `Generate video (${duration}s)`}
           </button>
 
           {videoUrl && (
             <a className="download-link" href={videoUrl} download={`${slugify(project.title)}.webm`}>
-              Video downloaden (.webm)
+              Download video (.webm)
             </a>
           )}
         </div>
