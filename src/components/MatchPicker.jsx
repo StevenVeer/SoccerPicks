@@ -78,6 +78,13 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   }, [date]);
 
   function selectMatch(match) {
+    if (selectedMatch?.id === match.id) {
+      setSelectedMatch(null);
+      setOdds(null);
+      setOddsLoading(false);
+      setError('');
+      return;
+    }
     setSelectedMatch(match);
     setOdds(null);
     setOddsLoading(true);
@@ -129,6 +136,14 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
     setDate(nextDate);
     setCalendarMonth(new Date(`${nextDate}T12:00:00Z`));
     setCalendarOpen(false);
+  }
+
+  function changeLeague(nextLeague) {
+    setLeagueId(nextLeague);
+    setSelectedMatch(null);
+    setOdds(null);
+    setOddsLoading(false);
+    setError('');
   }
 
   return (
@@ -187,7 +202,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
           ))}
         </div>
         <div className="competition-select">
-          <select value={leagueId} onChange={(event) => setLeagueId(event.target.value)} aria-label="Competition filter">
+          <select value={leagueId} onChange={(event) => changeLeague(event.target.value)} aria-label="Competition filter">
             <option value="all">All competitions</option>
             {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
           </select>

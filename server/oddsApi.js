@@ -24,7 +24,7 @@ async function apiRequest(path, apiKey) {
   return data;
 }
 
-function normalizeMarkets(bookmakers) {
+function normalizeMarkets(bookmakers, homeTeam, awayTeam) {
   if (!bookmakers?.length) return { bookmaker: null, markets: [], updatedAt: null };
 
   const marketDefinitions = [
@@ -38,12 +38,15 @@ function normalizeMarkets(bookmakers) {
     const available = bookmakers.flatMap((bookmaker) => (
       bookmaker.markets
         .filter((market) => market.key === key)
-        .flatMap((market) => market.outcomes.map((outcome) => ({
-          label: outcome.point ? `${outcome.name} ${outcome.point}` : outcome.name,
-          odds: Number(outcome.price),
-          bookmaker: bookmaker.title,
-          updatedAt: market.last_update || bookmaker.last_update,
-        })))
+        .flatMap((market) => market.outcomes
+          .filter((outcome) => key !== 'totals' || [1.5, 2.5, 3.5].includes(Number(outcome.point)))
+          .map((outcome) => ({
+            label: outcome.point ? `${outcome.name} ${outcome.point}` : outcome.name,
+            odds: Number(outcome.price),
+            point: Number(outcome.point),
+            bookmaker: bookmaker.title,
+            updatedAt: market.last_update || bookmaker.last_update,
+          })))
     ));
     const bestByLabel = new Map();
     available.forEach((outcome) => {
@@ -51,6 +54,24 @@ function normalizeMarkets(bookmakers) {
       if (!current || outcome.odds > current.odds) bestByLabel.set(outcome.label, outcome);
     });
     const outcomes = [...bestByLabel.values()];
+    if (key === 'h2h' && homeTeam && awayTeam) {
+      const normalizedHome = homeTeam.toLowerCase();
+      const normalizedAway = awayTeam.toLowerCase();
+      const outcomeOrder = (outcome) => {
+        const label = outcome.label.toLowerCase();
+        if (label === normalizedHome) return 0;
+        if (label === 'draw' || label === 'tie') return 1;
+        if (label === normalizedAway) return 2;
+        return 3;
+      };
+      outcomes.sort((first, second) => outcomeOrder(first) - outcomeOrder(second));
+    }
+    if (key === 'totals') {
+      outcomes.sort((first, second) => (
+        first.point - second.point ||
+        (first.label.startsWith('Over') ? -1 : 1)
+      ));
+    }
     if (!outcomes.length) return [];
     return [{
       name,
@@ -67,7 +88,7 @@ function normalizeMarkets(bookmakers) {
 }
 
 function normalizeMatch(event, league) {
-  const normalizedOdds = normalizeMarkets(event.bookmakers);
+  const normalizedOdds = normalizeMarkets(event.bookmakers, event.home_team, event.away_team);
   return {
     id: event.id,
     sportKey: league.key,
@@ -151,7 +172,7 @@ export function oddsApiPlugin() {
               `/sports/${sportKey}/events/${fixtureId}/odds/?regions=eu&markets=h2h,totals,btts,draw_no_bet,double_chance`,
               apiKey
             );
-            const value = normalizeMarkets(events.bookmakers);
+            const value = normalizeMarkets(events.bookmakers, events.home_team, events.away_team);
             oddsCache.set(fixtureId, { value, expiresAt: Date.now() + ODDS_CACHE_MS });
             response.end(JSON.stringify(value));
             return;
