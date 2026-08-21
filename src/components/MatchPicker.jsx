@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const dateFormatter = new Intl.DateTimeFormat('nl-NL', {
+const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
@@ -8,7 +8,7 @@ const dateFormatter = new Intl.DateTimeFormat('nl-NL', {
   minute: '2-digit',
 });
 
-const shortDateFormatter = new Intl.DateTimeFormat('nl-NL', {
+const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
@@ -21,7 +21,7 @@ function shiftDate(value, days) {
 }
 
 function monthLabel(value) {
-  return new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric' }).format(value);
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(value);
 }
 
 function calendarDays(month) {
@@ -36,7 +36,7 @@ function calendarDays(month) {
   });
 }
 
-export default function MatchPicker({ onAddPick, disabled }) {
+export default function MatchPicker({ picks, onAddPick, disabled }) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [matches, setMatches] = useState([]);
   const [leagues, setLeagues] = useState([]);
@@ -58,7 +58,7 @@ export default function MatchPicker({ onAddPick, disabled }) {
     fetch(`/api/football/matches?date=${date}`)
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Wedstrijden konden niet worden geladen.');
+        if (!response.ok) throw new Error(data.error || 'Matches could not be loaded.');
         return data;
       })
       .then((data) => {
@@ -85,7 +85,7 @@ export default function MatchPicker({ onAddPick, disabled }) {
     fetch(`/api/football/odds?fixture=${match.id}&sport=${encodeURIComponent(match.sportKey)}`)
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Odds konden niet worden geladen.');
+        if (!response.ok) throw new Error(data.error || 'Odds could not be loaded.');
         return data;
       })
       .then(setOdds)
@@ -104,6 +104,14 @@ export default function MatchPicker({ onAddPick, disabled }) {
     });
   }
 
+  function isOutcomeAdded(market, outcome) {
+    return picks.some((pick) => (
+      pick.match === `${selectedMatch.home} - ${selectedMatch.away}` &&
+      pick.pick === outcome.label &&
+      pick.market === market.name
+    ));
+  }
+
   const visibleMatches = leagueId === 'all'
     ? matches
     : matches.filter((match) => match.league === leagueId);
@@ -114,7 +122,7 @@ export default function MatchPicker({ onAddPick, disabled }) {
     }))
     .filter((league) => league.matches.length > 0);
   const today = new Date().toISOString().slice(0, 10);
-  const quickDates = [today, shiftDate(today, 1), shiftDate(today, 2)];
+  const quickDates = [today, shiftDate(today, 1)];
   const days = calendarDays(calendarMonth);
 
   function chooseDate(nextDate) {
@@ -124,29 +132,29 @@ export default function MatchPicker({ onAddPick, disabled }) {
   }
 
   return (
-    <section className="match-picker" aria-label="Actuele wedstrijden">
+    <section className="match-picker" aria-label="Current matches">
       <div className="match-picker-heading">
         <div>
           <span className="section-kicker">Live data</span>
-          <h2>Wedstrijd kiezen</h2>
+          <h2>Choose a match</h2>
         </div>
         <div className="date-picker-control">
-          <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, -1))} aria-label="Vorige dag">
+          <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, -1))} aria-label="Previous day">
             ‹
           </button>
           <button type="button" className="date-display" onClick={() => setCalendarOpen((open) => !open)} aria-expanded={calendarOpen}>
             <span aria-hidden="true">▣</span>
             {shortDateFormatter.format(new Date(`${date}T12:00:00Z`))}
           </button>
-          <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, 1))} aria-label="Volgende dag">
+          <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, 1))} aria-label="Next day">
             ›
           </button>
           {calendarOpen && (
             <div className="calendar-popover">
               <div className="calendar-header">
-                <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1)))} aria-label="Vorige maand">‹</button>
+                <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1)))} aria-label="Previous month">‹</button>
                 <strong>{monthLabel(calendarMonth)}</strong>
-                <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)))} aria-label="Volgende maand">›</button>
+                <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)))} aria-label="Next month">›</button>
               </div>
               <div className="calendar-weekdays">{['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((day) => <span key={day}>{day}</span>)}</div>
               <div className="calendar-grid">
@@ -166,7 +174,7 @@ export default function MatchPicker({ onAddPick, disabled }) {
         </div>
       </div>
       <div className="match-picker-controls">
-        <div className="quick-dates" aria-label="Snelle datumkeuze">
+        <div className="quick-dates" aria-label="Quick date selection">
           {quickDates.map((quickDate, index) => (
             <button
               type="button"
@@ -174,30 +182,30 @@ export default function MatchPicker({ onAddPick, disabled }) {
               key={quickDate}
               onClick={() => chooseDate(quickDate)}
             >
-              {index === 0 ? 'Vandaag' : index === 1 ? 'Morgen' : 'Overmorgen'}
+              {index === 0 ? 'Today' : 'Tomorrow'}
             </button>
           ))}
         </div>
         <div className="competition-select">
-          <select value={leagueId} onChange={(event) => setLeagueId(event.target.value)} aria-label="Competitie filter">
-            <option value="all">Alle competities</option>
+          <select value={leagueId} onChange={(event) => setLeagueId(event.target.value)} aria-label="Competition filter">
+            <option value="all">All competitions</option>
             {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
           </select>
         </div>
-        <span className="data-note">{matches.length} wedstrijden · odds op aanvraag</span>
+        <span className="data-note">{matches.length} matches · odds on demand</span>
       </div>
 
-      {loading && <div className="picker-message">Wedstrijden laden…</div>}
+      {loading && <div className="picker-message">Loading matches…</div>}
       {error && <div className="error picker-error">{error}</div>}
       {!loading && !error && visibleMatches.length === 0 && (
-        <div className="picker-message">Geen wedstrijden gevonden voor deze datum.</div>
+        <div className="picker-message">No matches found for this date.</div>
       )}
       <div className="match-groups">
         {groupedMatches.map((league) => (
           <div className="match-group" key={league.id}>
             <div className="match-group-heading">
               <strong>{league.name}</strong>
-              <span>{league.matches.length} {league.matches.length === 1 ? 'wedstrijd' : 'wedstrijden'}</span>
+              <span>{league.matches.length} {league.matches.length === 1 ? 'match' : 'matches'}</span>
             </div>
             <div className="match-list">
               {league.matches.map((match) => (
@@ -221,14 +229,14 @@ export default function MatchPicker({ onAddPick, disabled }) {
         <div className="odds-panel">
           <div className="odds-panel-heading">
             <div>
-              <span className="section-kicker">Markten</span>
+              <span className="section-kicker">Markets</span>
               <h3>{selectedMatch.home} vs {selectedMatch.away}</h3>
             </div>
             {odds?.bookmaker && <small>{odds.bookmaker}</small>}
           </div>
-          {oddsLoading && <div className="picker-message">Odds laden…</div>}
+          {oddsLoading && <div className="picker-message">Loading odds…</div>}
           {!oddsLoading && odds && odds.markets.length === 0 && (
-            <div className="picker-message">Geen odds beschikbaar voor deze wedstrijd.</div>
+            <div className="picker-message">No odds available for this match.</div>
           )}
           <div className="market-list">
             {odds?.markets.map((market) => (
@@ -236,8 +244,15 @@ export default function MatchPicker({ onAddPick, disabled }) {
                 <b>{market.name}</b>
                 <div className="outcome-list">
                   {market.outcomes.map((outcome) => (
-                    <button type="button" key={`${market.name}-${outcome.label}`} onClick={() => addOutcome(market, outcome)} disabled={disabled}>
+                    <button
+                      type="button"
+                      className={isOutcomeAdded(market, outcome) ? 'added' : ''}
+                      key={`${market.name}-${outcome.label}`}
+                      onClick={() => addOutcome(market, outcome)}
+                      disabled={disabled && !isOutcomeAdded(market, outcome)}
+                    >
                       <span>{outcome.label}</span>
+                      {isOutcomeAdded(market, outcome) && <em>Added</em>}
                       <strong>{outcome.odds.toFixed(2)}</strong>
                     </button>
                   ))}

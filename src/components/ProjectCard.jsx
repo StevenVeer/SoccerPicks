@@ -94,6 +94,15 @@ const ProjectCard = forwardRef(function ProjectCard(
 
   function addLivePick(pick) {
     setError('');
+    const existingIndex = project.picks.findIndex((currentPick) => (
+      currentPick.match === pick.match &&
+      currentPick.pick === pick.pick &&
+      currentPick.market === pick.market
+    ));
+    if (existingIndex >= 0) {
+      onChange({ ...project, picks: project.picks.filter((_, index) => index !== existingIndex) });
+      return;
+    }
     if (project.picks.length >= 8) {
       setError('You have reached the maximum of 8 picks.');
       return;
@@ -241,7 +250,7 @@ const ProjectCard = forwardRef(function ProjectCard(
             onChange={(e) => updateField('disclaimer', e.target.value)}
           />
 
-          <MatchPicker onAddPick={addLivePick} disabled={project.picks.length >= 8} />
+          <MatchPicker picks={project.picks} onAddPick={addLivePick} disabled={project.picks.length >= 8} />
 
           <form onSubmit={addPick} className="pick-form">
             <label htmlFor={`match-${project.id}`}>Match</label>

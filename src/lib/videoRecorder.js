@@ -15,7 +15,7 @@ export function pickMimeType() {
 export function recordCanvasVideo(canvas, project, timelineFn, renderFn, onProgress) {
   return new Promise((resolve, reject) => {
     if (!canvas || !canvas.captureStream || !window.MediaRecorder) {
-      reject(new Error('Video-opname wordt niet ondersteund in deze browser. Open dit dashboard in Chrome.'));
+      reject(new Error('Video recording is not supported in this browser. Open this dashboard in Chrome.'));
       return;
     }
 

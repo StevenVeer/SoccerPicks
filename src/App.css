@@ -395,8 +395,12 @@ input:focus {
 .quick-dates button {
   border-radius: 6px;
   color: rgba(244, 242, 232, 0.65);
-  font-size: 11px;
-  padding: 7px 9px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  min-width: 0;
+  height: 38px;
+  padding: 0 11px;
 }
 .section-kicker {
   display: block;
@@ -449,6 +453,15 @@ input:focus {
 }
 .match-picker select {
   max-width: none;
+}
+.competition-select select {
+  height: 38px;
+  background: rgba(10, 18, 16, 0.72);
+  border: 1px solid rgba(232, 178, 61, 0.42);
+  border-radius: 7px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  padding: 0 36px 0 11px;
 }
 .match-picker-controls {
   margin: 14px 0 10px;
@@ -622,6 +635,18 @@ input:focus {
   border-color: var(--gold);
   color: var(--ink);
   transform: translateY(-1px);
+}
+.outcome-list button.added {
+  background: rgba(232, 178, 61, 0.16);
+  border-color: var(--gold);
+}
+.outcome-list button.added em {
+  color: var(--gold);
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .outcome-list button span {
   padding-right: 3px;
