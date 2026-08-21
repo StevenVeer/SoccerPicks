@@ -1,4 +1,4 @@
-import { clamp, ease, truncate, fitFontSize, roundRectPath } from './utils';
+import { clamp, ease, truncate, roundRectPath } from './utils';
 import { timeline } from './timeline';
 
 function drawBackground(c, W, H) {
@@ -59,18 +59,13 @@ function drawHeader(c, W, project, progress) {
   c.font = '600 30px Oswald';
   c.fillText('@SOCCER_PICKS_144', W / 2 + 20, 150);
 
-  const titleText = (project.title || 'MATCHDAY PICKS').toUpperCase();
-  const titleSize = fitFontSize(c, titleText, 900, 76, 'Oswald', 700);
-  c.fillStyle = '#F4F2E8';
-  c.font = `700 ${titleSize}px Oswald`;
-  c.fillText(titleText, W / 2, 270);
-
   c.fillStyle = '#E8B23D';
-  c.fillRect(W / 2 - 80, 305, 160, 6);
+  c.fillRect(W / 2 - 80, 210, 160, 6);
 
   c.fillStyle = 'rgba(244,242,232,0.6)';
-  c.font = '500 30px Oswald';
-  c.fillText('⚽ TODAY\'S PICKS ⚽', W / 2, 375);
+  c.font = '500 42px Oswald';
+  c.textAlign = 'center';
+  c.fillText('⚽ TODAY\'S PICKS ⚽', W / 2, 300);
   c.restore();
 }
 
@@ -202,11 +197,15 @@ export function renderCanvas(ctx, t, project) {
   const picks = project.picks || [];
   const n = picks.length;
   const tl = timeline(n);
+  const animationTime =
+    t < tl.startHold
+      ? tl.animationTotal
+      : Math.min((t - tl.startHold) * tl.animationSpeed, tl.animationTotal);
 
   ctx.clearRect(0, 0, W, H);
   drawBackground(ctx, W, H);
 
-  const introP = clamp(t / tl.introDur, 0, 1);
+  const introP = clamp(animationTime / tl.introDur, 0, 1);
   drawHeader(ctx, W, project, introP);
 
   const cardTop = 460;
@@ -219,18 +218,18 @@ export function renderCanvas(ctx, t, project) {
 
   picks.forEach((p, i) => {
     const startT = tl.introDur + i * tl.pickStep;
-    const prog = clamp((t - startT) / tl.pickAnim, 0, 1);
+    const prog = clamp((animationTime - startT) / tl.pickAnim, 0, 1);
     const rowY = cardTop + padding + i * rowH;
     drawPickRow(ctx, p, rowY, rowH, W, prog);
     if (i < n - 1) drawPerforation(ctx, rowY + rowH, W);
   });
 
   const parlayY = cardTop + padding + n * rowH + 20;
-  const parlayProg = clamp((t - tl.parlayStart) / tl.parlayAnim, 0, 1);
+  const parlayProg = clamp((animationTime - tl.parlayStart) / tl.parlayAnim, 0, 1);
   const parlayTotal = picks.reduce((acc, p) => acc * p.odds, 1);
   drawParlay(ctx, parlayY, parlayH - 30, W, parlayTotal, parlayProg);
 
-  const outroProg = clamp((t - tl.outroStart) / tl.outroAnim, 0, 1);
+  const outroProg = clamp((animationTime - tl.outroStart) / tl.outroAnim, 0, 1);
   drawFooter(ctx, H, W, project, outroProg);
 }
 

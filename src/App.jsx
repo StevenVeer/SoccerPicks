@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import ProjectCard from './components/ProjectCard.jsx';
-import { slugify } from './lib/utils';
+import { dateStamp, slugify } from './lib/utils';
 
 let idCounter = 1;
 
@@ -96,11 +96,12 @@ export default function App() {
       const { default: JSZip } = await import('jszip');
       const zip = new JSZip();
       const usedNames = new Set();
+      const today = dateStamp();
       ready.forEach((p) => {
-        let name = `${slugify(p.title)}.webm`;
+        let name = `${slugify(p.title)}-${today}.webm`;
         let i = 2;
         while (usedNames.has(name)) {
-          name = `${slugify(p.title)}-${i}.webm`;
+          name = `${slugify(p.title)}-${today}-${i}.webm`;
           i += 1;
         }
         usedNames.add(name);
@@ -110,7 +111,7 @@ export default function App() {
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'soccer-picks-videos.zip';
+      a.download = `soccer-picks-videos-${today}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();

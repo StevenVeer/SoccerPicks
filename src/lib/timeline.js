@@ -1,6 +1,8 @@
 const INTRO_DUR = 600;
 const PICK_STEP = 650;
 const PICK_ANIM = 450;
+const START_HOLD = 100;
+const ANIMATION_SPEED = 2;
 
 export function timeline(pickCount) {
   const picksEnd = INTRO_DUR + Math.max(0, pickCount - 1) * PICK_STEP + PICK_ANIM;
@@ -9,9 +11,11 @@ export function timeline(pickCount) {
   const hold = 350;
   const outroStart = parlayStart + parlayAnim + hold;
   const outroAnim = 450;
-  const total = outroStart + outroAnim + 700;
+  const animationTotal = outroStart + outroAnim + 700;
 
   return {
+    startHold: START_HOLD,
+    animationSpeed: ANIMATION_SPEED,
     introDur: INTRO_DUR,
     pickStep: PICK_STEP,
     pickAnim: PICK_ANIM,
@@ -20,6 +24,7 @@ export function timeline(pickCount) {
     parlayAnim,
     outroStart,
     outroAnim,
-    total,
+    animationTotal,
+    total: animationTotal,
   };
 }

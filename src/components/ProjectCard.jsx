@@ -2,7 +2,7 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } f
 import { renderCanvas, PREVIEW_T } from '../lib/canvasRenderer';
 import { timeline } from '../lib/timeline';
 import { recordCanvasVideo } from '../lib/videoRecorder';
-import { slugify } from '../lib/utils';
+import { dateStamp, slugify } from '../lib/utils';
 
 const ProjectCard = forwardRef(function ProjectCard(
   { project, onChange, onRemove, onDuplicate, onVideoReady },
@@ -10,7 +10,8 @@ const ProjectCard = forwardRef(function ProjectCard(
 ) {
   const canvasRef = useRef(null);
   const previewFrameRef = useRef(null);
-  const [matchInput, setMatchInput] = useState('');
+  const [homeTeamInput, setHomeTeamInput] = useState('');
+  const [awayTeamInput, setAwayTeamInput] = useState('');
   const [pickInput, setPickInput] = useState('');
   const [oddsInput, setOddsInput] = useState('');
   const [error, setError] = useState('');
@@ -18,6 +19,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [draggedPickIndex, setDraggedPickIndex] = useState(null);
 
   // Redraw the static preview whenever the project data changes.
   useEffect(() => {
@@ -52,12 +54,14 @@ const ProjectCard = forwardRef(function ProjectCard(
   function addPick(e) {
     e.preventDefault();
     setError('');
-    const match = matchInput.trim();
+    const homeTeam = homeTeamInput.trim();
+    const awayTeam = awayTeamInput.trim();
+    const match = homeTeam && awayTeam ? `${homeTeam} - ${awayTeam}` : '';
     const pickText = pickInput.trim();
     const odds = parseFloat(oddsInput);
 
     if (!match || !pickText || Number.isNaN(odds) || odds < 1.01) {
-      setError('Enter a match, pick, and valid odds (≥ 1.01).');
+      setError('Enter both teams, a pick, and valid odds (≥ 1.01).');
       return;
     }
     if (project.picks.length >= 8) {
@@ -65,13 +69,33 @@ const ProjectCard = forwardRef(function ProjectCard(
       return;
     }
     onChange({ ...project, picks: [...project.picks, { match, pick: pickText, odds }] });
-    setMatchInput('');
+    setHomeTeamInput('');
+    setAwayTeamInput('');
     setPickInput('');
     setOddsInput('');
   }
 
   function removePick(index) {
     onChange({ ...project, picks: project.picks.filter((_, i) => i !== index) });
+  }
+
+  function reorderPick(targetIndex) {
+    if (draggedPickIndex === null || draggedPickIndex === targetIndex) return;
+    const reorderedPicks = [...project.picks];
+    const [draggedPick] = reorderedPicks.splice(draggedPickIndex, 1);
+    reorderedPicks.splice(targetIndex, 0, draggedPick);
+    onChange({ ...project, picks: reorderedPicks });
+  }
+
+  function handlePickDragStart(event, index) {
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggedPickIndex(index);
+  }
+
+  function handlePickDrop(event, index) {
+    event.preventDefault();
+    reorderPick(index);
+    setDraggedPickIndex(null);
   }
 
   function playPreview() {
@@ -179,13 +203,25 @@ const ProjectCard = forwardRef(function ProjectCard(
 
           <form onSubmit={addPick} className="pick-form">
             <label htmlFor={`match-${project.id}`}>Match</label>
-            <input
-              id={`match-${project.id}`}
-              type="text"
-              placeholder="Ajax - PSV"
-              value={matchInput}
-              onChange={(e) => setMatchInput(e.target.value)}
-            />
+            <div className="match-teams">
+              <input
+                id={`home-team-${project.id}`}
+                type="text"
+                placeholder="Arsenal"
+                value={homeTeamInput}
+                onChange={(e) => setHomeTeamInput(e.target.value)}
+                aria-label="Home team"
+              />
+              <span aria-hidden="true">-</span>
+              <input
+                id={`away-team-${project.id}`}
+                type="text"
+                placeholder="Coventry City"
+                value={awayTeamInput}
+                onChange={(e) => setAwayTeamInput(e.target.value)}
+                aria-label="Away team"
+              />
+            </div>
             <div className="grid3">
               <div>
                 <label htmlFor={`pick-${project.id}`}>Pick</label>
@@ -221,7 +257,16 @@ const ProjectCard = forwardRef(function ProjectCard(
           <div className="pick-list">
             {project.picks.length === 0 && <div className="empty">No picks added yet.</div>}
             {project.picks.map((p, i) => (
-              <div className="pick-row" key={i}>
+              <div
+                className={`pick-row${draggedPickIndex === i ? ' dragging' : ''}`}
+                key={i}
+                draggable
+                onDragStart={(event) => handlePickDragStart(event, i)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => handlePickDrop(event, i)}
+                onDragEnd={() => setDraggedPickIndex(null)}
+              >
+                <span className="drag-handle" aria-hidden="true">⋮⋮</span>
                 <div className="info">
                   <b>{p.match}</b>
                   {p.pick} · <span className="odds">{p.odds.toFixed(2)}</span>
@@ -266,7 +311,11 @@ const ProjectCard = forwardRef(function ProjectCard(
           </button>
 
           {videoUrl && (
-            <a className="primary download-link" href={videoUrl} download={`${slugify(project.title)}.webm`}>
+            <a
+              className="primary download-link"
+              href={videoUrl}
+              download={`${slugify(project.title)}-${dateStamp()}.webm`}
+            >
               Download
             </a>
           )}

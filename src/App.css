@@ -219,6 +219,18 @@ input:focus {
   border-color: var(--gold);
 }
 
+.match-teams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+.match-teams span {
+  padding-top: 11px;
+  color: var(--gold);
+  font-family: 'Space Mono', monospace;
+}
+
 .grid3 {
   display: grid;
   grid-template-columns: 1fr 1fr 46px;
@@ -248,15 +260,33 @@ input:focus {
   gap: 10px;
   padding: 10px 2px;
   border-bottom: 1px dashed rgba(244, 242, 232, 0.15);
+  cursor: grab;
+}
+.pick-row:active {
+  cursor: grabbing;
+}
+.pick-row.dragging {
+  opacity: 0.45;
+  background: rgba(232, 178, 61, 0.08);
+}
+.drag-handle {
+  flex: 0 0 18px;
+  color: rgba(244, 242, 232, 0.45);
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  letter-spacing: -0.2em;
+  user-select: none;
 }
 .pick-row:last-child {
   border-bottom: none;
 }
 .pick-row .info {
+  flex: 1;
   font-family: 'Space Mono', monospace;
   font-size: 12px;
   line-height: 1.5;
   color: rgba(244, 242, 232, 0.65);
+  text-align: left;
 }
 .pick-row .info b {
   font-family: 'Oswald', sans-serif;
