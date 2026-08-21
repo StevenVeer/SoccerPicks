@@ -54,18 +54,18 @@ function drawHeader(c, W, project, progress) {
   c.translate(0, -dy);
   c.textAlign = 'center';
 
-  drawProfileAvatar(c, W / 2 - 150, 137, 20);
+  drawProfileAvatar(c, W / 2 - 150, 257, 20);
   c.fillStyle = '#E8B23D';
   c.font = '600 30px Oswald';
-  c.fillText('@SOCCER_PICKS_144', W / 2 + 20, 150);
+  c.fillText('@SOCCER_PICKS_144', W / 2 + 20, 270);
 
   c.fillStyle = '#E8B23D';
-  c.fillRect(W / 2 - 80, 210, 160, 6);
+  c.fillRect(W / 2 - 80, 310, 160, 6);
 
   c.fillStyle = 'rgba(244,242,232,0.6)';
   c.font = '500 42px Oswald';
   c.textAlign = 'center';
-  c.fillText('⚽ TODAY\'S PICKS ⚽', W / 2, 300);
+  c.fillText('⚽ TODAY\'S PICKS ⚽', W / 2, 400);
   c.restore();
 }
 
@@ -182,10 +182,10 @@ function drawFooter(c, H, W, project, progress) {
   c.textAlign = 'center';
   c.fillStyle = '#E8B23D';
   c.font = '700 34px Oswald';
-  c.fillText('FOLLOW FOR MORE PICKS ⚽', W / 2, H - 110);
+  c.fillText('FOLLOW FOR MORE PICKS ⚽', W / 2, H - 235);
   c.fillStyle = 'rgba(244,242,232,0.5)';
   c.font = '400 24px Oswald';
-  c.fillText(project.disclaimer || '18+ · Bet responsibly', W / 2, H - 65);
+  c.fillText(project.disclaimer || '18+ · Bet responsibly', W / 2, H - 190);
   c.restore();
 }
 
