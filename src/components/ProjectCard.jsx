@@ -4,6 +4,13 @@ import { timeline } from '../lib/timeline';
 import { recordCanvasVideo } from '../lib/videoRecorder';
 import { dateStamp, slugify } from '../lib/utils';
 
+const DESCRIPTION = `⚽️ 3 football picks I’m backing today 👀
+
+Which one are you taking? 👇
+Follow for daily football predictions & value bets 📈
+
+#football #footballtips #footballpredictions #bettingtips #soccer #soccerbets #valuebets #footballbetting #bettingpicks #sportsbetting`;
+
 const ProjectCard = forwardRef(function ProjectCard(
   { project, onChange, onRemove, onDuplicate, onVideoReady },
   ref
@@ -20,6 +27,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [videoUrl, setVideoUrl] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [draggedPickIndex, setDraggedPickIndex] = useState(null);
+  const [descriptionCopied, setDescriptionCopied] = useState(false);
 
   // Redraw the static preview whenever the project data changes.
   useEffect(() => {
@@ -96,6 +104,16 @@ const ProjectCard = forwardRef(function ProjectCard(
     event.preventDefault();
     reorderPick(index);
     setDraggedPickIndex(null);
+  }
+
+  async function copyDescription() {
+    try {
+      await navigator.clipboard.writeText(DESCRIPTION);
+      setDescriptionCopied(true);
+      window.setTimeout(() => setDescriptionCopied(false), 1800);
+    } catch {
+      setError('Could not copy the description.');
+    }
   }
 
   function playPreview() {
@@ -281,6 +299,16 @@ const ProjectCard = forwardRef(function ProjectCard(
           <div className="parlay-summary">
             <span>Combined odds ({project.picks.length}/8)</span>
             <b>{project.picks.length ? parlay.toFixed(2) : '—'}</b>
+          </div>
+
+          <div className="description-section">
+            <div className="description-heading">
+              <span>Description</span>
+              <button type="button" className="copy-description" onClick={copyDescription}>
+                {descriptionCopied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="description-text">{DESCRIPTION}</div>
           </div>
         </div>
 
