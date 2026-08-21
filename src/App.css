@@ -313,6 +313,8 @@ input:focus {
 }
 .project-preview button.primary {
   margin-top: 14px;
+  width: 100%;
+  max-width: 320px;
 }
 .phone-frame {
   background: #000;
@@ -328,6 +330,32 @@ input:focus {
   border-radius: 18px;
   overflow: hidden;
   aspect-ratio: 9 / 16;
+}
+.preview-play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  padding: 0 0 0 3px;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 18, 16, 0.78);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  color: var(--chalk);
+  font-size: 21px;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.preview-play-button:hover:not(:disabled) {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.05);
+}
+.preview-play-button:disabled {
+  cursor: default;
 }
 canvas {
   width: 100%;
@@ -352,15 +380,23 @@ canvas {
 .download-link {
   display: block;
   text-align: center;
-  margin-top: 10px;
+  margin-top: 14px;
   width: 100%;
   max-width: 320px;
-  background: rgba(232, 178, 61, 0.12);
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  padding: 10px;
-  border-radius: 9px;
+  box-sizing: border-box;
+  color: var(--ink);
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 13px;
+  padding: 13px 18px;
+  border-radius: 10px;
+  background: var(--gold);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 12px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.download-link:hover {
+  background: #f2c463;
+  transform: translateY(-1px);
 }

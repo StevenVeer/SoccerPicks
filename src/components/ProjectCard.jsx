@@ -243,6 +243,15 @@ const ProjectCard = forwardRef(function ProjectCard(
           <div className="phone-frame">
             <div className="phone-screen">
               <canvas ref={canvasRef} width="1080" height="1920" />
+              <button
+                type="button"
+                className="preview-play-button"
+                onClick={playPreview}
+                disabled={isPreviewing || status === 'recording'}
+                aria-label={isPreviewing ? 'Playing preview' : 'Play preview'}
+              >
+                {isPreviewing ? '❚❚' : '▶'}
+              </button>
             </div>
           </div>
 
@@ -252,22 +261,13 @@ const ProjectCard = forwardRef(function ProjectCard(
             </div>
           )}
 
-          <button
-            type="button"
-            className="primary outline"
-            onClick={playPreview}
-            disabled={isPreviewing || status === 'recording'}
-          >
-            {isPreviewing ? 'Playing preview…' : 'Play preview'}
-          </button>
-
           <button type="button" className="primary" onClick={generate} disabled={status === 'recording' || isPreviewing}>
             {status === 'recording' ? 'Recording…' : `Generate video (${duration}s)`}
           </button>
 
           {videoUrl && (
-            <a className="download-link" href={videoUrl} download={`${slugify(project.title)}.webm`}>
-              Download video (.webm)
+            <a className="primary download-link" href={videoUrl} download={`${slugify(project.title)}.webm`}>
+              Download
             </a>
           )}
         </div>

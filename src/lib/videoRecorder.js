@@ -26,7 +26,9 @@ export function recordCanvasVideo(canvas, project, timelineFn, renderFn, onProgr
 
     let recorder;
     try {
-      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const options = { videoBitsPerSecond: 8_000_000 };
+      if (mimeType) options.mimeType = mimeType;
+      recorder = new MediaRecorder(stream, options);
     } catch (err) {
       reject(err);
       return;
