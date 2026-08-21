@@ -1,4 +1,4 @@
-import { clamp, ease, truncate, roundRectPath } from './utils';
+import { clamp, ease, truncate, truncateToWidth, roundRectPath } from './utils';
 import { timeline } from './timeline';
 
 function drawBackground(c, W, H) {
@@ -95,15 +95,16 @@ function drawPickRow(c, pick, rowY, rowH, W, progress) {
   c.textAlign = 'left';
   c.fillStyle = '#F4F2E8';
   c.font = '600 40px Oswald';
-  c.fillText(truncate(pick.match, 24), paddingX, matchY);
+  const badgeW = 150;
+  const badgeX = W - 100 - badgeW;
+  const matchMaxWidth = badgeX - paddingX - 10;
+  c.fillText(truncateToWidth(c, pick.match, matchMaxWidth), paddingX, matchY);
 
   c.fillStyle = '#E8B23D';
   c.font = '400 32px Oswald';
   c.fillText(truncate(pick.pick, 28), paddingX, pickY);
 
-  const badgeW = 150;
   const badgeH = 64;
-  const badgeX = W - 100 - badgeW;
   const badgeY = rowY + rowH / 2 - badgeH / 2;
   roundRectPath(c, badgeX, badgeY, badgeW, badgeH, 12);
   c.fillStyle = 'rgba(232,178,61,0.12)';

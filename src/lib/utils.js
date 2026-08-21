@@ -10,6 +10,15 @@ export function truncate(str, maxLen) {
   return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
 }
 
+export function truncateToWidth(c, str, maxWidth) {
+  if (c.measureText(str).width <= maxWidth) return str;
+  let end = str.length;
+  while (end > 1 && c.measureText(`${str.slice(0, end - 1)}…`).width > maxWidth) {
+    end -= 1;
+  }
+  return `${str.slice(0, end - 1)}…`;
+}
+
 export function roundRectPath(c, x, y, w, h, r) {
   c.beginPath();
   c.moveTo(x + r, y);
