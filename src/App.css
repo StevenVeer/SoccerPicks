@@ -1074,9 +1074,9 @@ canvas {
 .dashboard-stats b, .dashboard-stats span { display: block; }
 .dashboard-stats b { color: var(--gold); font-family: 'Space Mono', monospace; font-size: 22px; }
 .dashboard-stats span { color: rgba(244, 242, 232, 0.5); font-size: 11px; letter-spacing: 0.1em; margin-top: 4px; text-transform: uppercase; }
-.video-library { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 18px; }
+.video-library { display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 18px; }
 .video-item { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; min-width: 0; background: rgba(10, 18, 16, 0.62); border: 1px solid rgba(232, 178, 61, 0.25); border-radius: 14px; padding: 14px; }
-.video-item-delete { position: absolute; top: 10px; right: 10px; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; padding: 0 0 2px; background: rgba(10, 18, 16, 0.82); border: 1px solid rgba(225, 75, 75, 0.55); border-radius: 7px; color: #ed777b; cursor: pointer; font-size: 20px; line-height: 1; }
+.video-item-delete { position: absolute; top: 10px; right: 10px; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; background: rgba(10, 18, 16, 0.82); border: 1px solid rgba(225, 75, 75, 0.55); border-radius: 7px; color: #ed777b; cursor: pointer; line-height: 1; }
 .video-item-delete:hover { background: rgba(190, 56, 61, 0.2); border-color: #be383d; color: #ff9a9d; }
 .video-thumb { position: relative; align-self: start; aspect-ratio: 9 / 16; background: var(--ink); border-radius: 8px; overflow: hidden; }
 .video-thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
@@ -1085,21 +1085,26 @@ canvas {
 .video-thumb-button:hover:not(:disabled) img { opacity: 0.78; }
 .thumb-placeholder { display: grid; height: 100%; place-items: center; color: rgba(244, 242, 232, 0.4); font-size: 11px; text-align: center; }
 .video-item-info { display: flex; min-width: 0; flex-direction: column; padding: 3px 0; }
+.video-item-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-right: 44px; }
+.video-item-links { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.link-btn { background: none; border: none; padding: 0; color: rgba(244, 242, 232, 0.5); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.link-btn:hover { color: var(--gold); }
+.link-btn-gold { color: var(--gold); }
 .video-item-info h2 { margin: 5px 0 7px; color: var(--chalk); font-size: 20px; overflow-wrap: anywhere; }
 .video-picks-description { max-height: 92px; min-height: 31px; overflow-y: auto; color: rgba(244, 242, 232, 0.52); font-family: 'Space Mono', monospace; font-size: 10px; line-height: 1.5; scrollbar-color: rgba(232, 178, 61, 0.72) rgba(244, 242, 232, 0.08); scrollbar-width: thin; }
 .video-picks-description span { display: block; overflow-wrap: anywhere; }
-.video-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; padding-top: 14px; }
-.video-item-actions .primary { width: auto; padding: 9px 11px; font-size: 11px; }
+.video-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; padding-top: 14px; }
 .download-menu { position: relative; }
-.download-menu summary { list-style: none; background: transparent; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 7px; color: var(--gold); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; padding: 8px 10px; text-transform: uppercase; }
-.download-menu summary::-webkit-details-marker { display: none; }
-.download-menu summary::after { display: inline-block; margin-left: 7px; content: '▾'; font-size: 10px; }
-.download-menu[open] summary, .download-menu summary:hover { background: rgba(232, 178, 61, 0.12); border-color: var(--gold); }
-.download-menu-options { position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 4; display: grid; min-width: 150px; padding: 5px; background: #10251e; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 8px; box-shadow: 0 12px 25px rgba(0, 0, 0, 0.45); }
+.video-item-links .download-menu summary { list-style: none; background: none; border: none; padding: 0; color: rgba(244, 242, 232, 0.5); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.video-item-links .download-menu summary::-webkit-details-marker { display: none; }
+.video-item-links .download-menu summary::after { display: inline-block; margin-left: 5px; content: '▾'; font-size: 9px; }
+.video-item-links .download-menu[open] summary, .video-item-links .download-menu summary:hover { color: var(--gold); }
+.download-menu-options { position: absolute; right: 0; z-index: 4; display: grid; min-width: 150px; padding: 5px; background: #10251e; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 8px; box-shadow: 0 12px 25px rgba(0, 0, 0, 0.45); }
+.download-menu.download-menu-top .download-menu-options { top: calc(100% + 7px); }
 .download-menu-options a { padding: 8px 9px; color: var(--chalk); font-family: 'Oswald', sans-serif; font-size: 11px; text-decoration: none; white-space: nowrap; }
 .download-menu-options a:hover { background: rgba(232, 178, 61, 0.14); color: var(--gold); }
-.result-actions { display: flex; gap: 5px; width: 100%; }
-.result-actions button { flex: 1; border: 1px solid; border-radius: 6px; cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; padding: 7px; text-transform: uppercase; }
+.result-actions { display: flex; gap: 6px; }
+.result-actions button, .posted-button { border: 1px solid; border-radius: 7px; cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; padding: 7px 13px; text-transform: uppercase; }
 .hit-button { background: rgba(37, 156, 91, 0.14); border-color: #269c5b; color: #63d38e; }
 .miss-button { background: rgba(190, 56, 61, 0.14); border-color: #be383d; color: #ed777b; }
 .result-actions button:disabled { cursor: not-allowed; opacity: 0.45; }

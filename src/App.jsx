@@ -98,6 +98,16 @@ export default function App() {
   const cardRefs = useRef({});
 
   useEffect(() => {
+    function closeDownloadMenus(event) {
+      document.querySelectorAll('details.download-menu[open]').forEach((menu) => {
+        if (!menu.contains(event.target)) menu.removeAttribute('open');
+      });
+    }
+    document.addEventListener('mousedown', closeDownloadMenus);
+    return () => document.removeEventListener('mousedown', closeDownloadMenus);
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
   }, [projects]);
 
@@ -401,28 +411,46 @@ export default function App() {
       <div className="video-library">
         {projects.map((p) => (
           <article className="video-item" key={p.id}>
-            <button type="button" className="video-item-delete" onClick={() => requestDeleteProject(p.id)} aria-label={`Delete ${p.title}`} title="Delete video">×</button>
+            <button type="button" className="video-item-delete" onClick={() => requestDeleteProject(p.id)} aria-label={`Delete ${p.title}`} title="Delete video">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 6h18" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+              </svg>
+            </button>
             <button type="button" className="video-thumb video-thumb-button" onClick={() => openVideoModal(p.id)} disabled={!media[p.id]?.videoUrl} aria-label={`Play ${p.title}`}>
               {media[p.id]?.resultUrl || media[p.id]?.overviewUrl ? <img src={media[p.id].resultUrl || media[p.id].overviewUrl} alt={`${p.title} ${p.result || 'overview'} result`} /> : <div className="thumb-placeholder">{mediaLoading ? 'Loading…' : media[p.id]?.videoBlob ? 'Generated' : 'Not generated'}</div>}
             </button>
             <div className="video-item-info">
-              <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : generatingIds[p.id] ? 'Generating…' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
+              <div className="video-item-topline">
+                <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : generatingIds[p.id] ? 'Generating…' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
+                <div className="video-item-links">
+                  <button type="button" className="link-btn link-btn-gold" onClick={() => setActiveProjectId(p.id)}>Open editor</button>
+                  {(media[p.id]?.videoUrl || media[p.id]?.resultUrl) && (
+                    <details className="download-menu download-menu-top">
+                      <summary>Download</summary>
+                      <div className="download-menu-options">
+                        {media[p.id]?.videoUrl && <a href={media[p.id].videoUrl} download={`${slugify(p.title)}-${dateStamp()}.webm`}>Download video</a>}
+                        {media[p.id]?.resultUrl && <a href={media[p.id].resultUrl} download={`${slugify(p.title)}-${p.result}.png`}>Download image</a>}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </div>
               <h2>{p.title}</h2>
               <div className="video-picks-description">
                 {p.picks.length > 0 ? p.picks.map((pick, index) => <span key={`${pick.match}-${index}`}>{pick.pick} · {Number(pick.odds).toFixed(2)}</span>) : <span>No picks added yet</span>}
               </div>
               <div className="video-item-actions">
-                <button type="button" className="primary" onClick={() => setActiveProjectId(p.id)}>Open editor</button>
-                {(media[p.id]?.videoUrl || media[p.id]?.resultUrl) && (
-                  <details className="download-menu">
-                    <summary>Download</summary>
-                    <div className="download-menu-options">
-                      {media[p.id]?.videoUrl && <a href={media[p.id].videoUrl} download={`${slugify(p.title)}-${dateStamp()}.webm`}>Download video</a>}
-                      {media[p.id]?.resultUrl && <a href={media[p.id].resultUrl} download={`${slugify(p.title)}-${p.result}.png`}>Download image</a>}
-                    </div>
-                  </details>
-                )}
-                <div className="result-actions"><button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')} disabled={Boolean(p.result)}>Hit</button><button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')} disabled={Boolean(p.result)}>Miss</button><button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>{p.status === 'posted' ? 'Posted' : 'Mark posted'}</button></div>
+                <div className="result-actions">
+                  <button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')} disabled={Boolean(p.result)}>Hit</button>
+                  <button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')} disabled={Boolean(p.result)}>Miss</button>
+                </div>
+                <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
+                  <span aria-hidden="true">▣</span> {p.status === 'posted' ? 'Posted' : 'Mark posted'}
+                </button>
               </div>
             </div>
           </article>
