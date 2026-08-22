@@ -960,11 +960,11 @@ canvas {
 .video-thumb { position: relative; align-self: start; aspect-ratio: 9 / 16; background: var(--ink); border-radius: 8px; overflow: hidden; }
 .video-thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .thumb-placeholder { display: grid; height: 100%; place-items: center; color: rgba(244, 242, 232, 0.4); font-size: 11px; text-align: center; }
-.video-item-info { min-width: 0; padding: 3px 0; }
+.video-item-info { display: flex; min-width: 0; flex-direction: column; padding: 3px 0; }
 .video-item-info h2 { margin: 5px 0 7px; color: var(--chalk); font-size: 20px; overflow-wrap: anywhere; }
 .video-picks-description { max-height: 92px; min-height: 31px; overflow-y: auto; color: rgba(244, 242, 232, 0.52); font-family: 'Space Mono', monospace; font-size: 10px; line-height: 1.5; scrollbar-color: rgba(232, 178, 61, 0.72) rgba(244, 242, 232, 0.08); scrollbar-width: thin; }
 .video-picks-description span { display: block; overflow-wrap: anywhere; }
-.video-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.video-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; padding-top: 14px; }
 .video-item-actions .primary { width: auto; padding: 9px 11px; font-size: 11px; }
 .text-action { color: var(--gold); font-size: 11px; text-decoration: none; }
 .text-action:hover { text-decoration: underline; }
