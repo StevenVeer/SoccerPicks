@@ -245,8 +245,8 @@ input:focus {
   height: 41px;
   margin-bottom: 0;
   padding-right: 34px;
-  appearance: textfield;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .odds-input-control input[type='number']::-webkit-inner-spin-button,
 .odds-input-control input[type='number']::-webkit-outer-spin-button {
