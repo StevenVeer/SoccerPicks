@@ -169,6 +169,22 @@ app.post('/api/archive', upload.fields([{ name: 'video', maxCount: 1 }, { name: 
   }
 });
 
+app.delete('/api/archive/:clientId', async (req, res) => {
+  const { clientId } = req.params;
+  try {
+    const { rows } = await pool.query('select id from posted_videos where client_id = $1', [clientId]);
+    const video = rows[0];
+    if (video) {
+      await pool.query('delete from video_picks where video_id = $1', [video.id]);
+      await pool.query('delete from posted_videos where id = $1', [video.id]);
+    }
+    await fs.rm(path.join(VIDEO_DIR, clientId), { recursive: true, force: true });
+    res.status(204).end();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.use('/videos', express.static(VIDEO_DIR));
 
 const PORT = process.env.PORT || 3001;

@@ -3,7 +3,7 @@ import ProjectCard from './components/ProjectCard.jsx';
 import { dateStamp, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
 import { PREVIEW_T, renderCanvas } from './lib/canvasRenderer';
-import { archiveProject } from './lib/archive';
+import { archiveProject, deleteArchivedProject } from './lib/archive';
 
 let idCounter = 1;
 const PROJECTS_STORAGE_KEY = 'soccer-picks-projects';
@@ -83,6 +83,7 @@ export default function App() {
   });
   const [media, setMedia] = useState({});
   const [activeProjectId, setActiveProjectId] = useState(null);
+  const [draftProjectId, setDraftProjectId] = useState(null);
   const [mediaLoading, setMediaLoading] = useState(true);
   const [saveNotice, setSaveNotice] = useState('');
   const [postingProjectId, setPostingProjectId] = useState(null);
@@ -146,16 +147,18 @@ export default function App() {
 
   function updateProject(id, updated) {
     setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    setDraftProjectId((prev) => (prev === id ? null : prev));
   }
 
   function addProject() {
     idCounter += 1;
+    const newId = idCounter;
     setProjects((prev) => {
       const last = prev[prev.length - 1];
       return [
         ...prev,
         {
-          id: idCounter,
+          id: newId,
           clientId: crypto.randomUUID(),
           title: `Video ${prev.length + 1}`,
           handle: 'soccer_picks_144',
@@ -164,6 +167,8 @@ export default function App() {
         },
       ];
     });
+    setDraftProjectId(newId);
+    setActiveProjectId(newId);
   }
 
   function duplicateProject(id) {
@@ -186,7 +191,9 @@ export default function App() {
   }
 
   function removeProject(id) {
+    const removedProject = projects.find((p) => p.id === id);
     setProjects((prev) => prev.filter((p) => p.id !== id));
+    setDraftProjectId((prev) => (prev === id ? null : prev));
     const oldMedia = media[id];
     if (oldMedia?.videoUrl) URL.revokeObjectURL(oldMedia.videoUrl);
     if (oldMedia?.overviewUrl) URL.revokeObjectURL(oldMedia.overviewUrl);
@@ -194,6 +201,7 @@ export default function App() {
     setMedia((prev) => { const next = { ...prev }; delete next[id]; return next; });
     deleteMedia(id).catch(() => {});
     delete cardRefs.current[id];
+    if (removedProject) deleteArchivedProject(removedProject).catch(() => {});
   }
 
   function requestDeleteProject(id) {
@@ -321,8 +329,16 @@ export default function App() {
   function saveProjects() {
     localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
     if (activeProject) archiveProject(activeProject, media[activeProject.id]);
+    setDraftProjectId((prev) => (prev === activeProjectId ? null : prev));
     setSaveNotice('Saved');
     window.setTimeout(() => setSaveNotice(''), 1800);
+  }
+
+  function cancelEditing() {
+    if (draftProjectId !== null && activeProjectId === draftProjectId) {
+      removeProject(draftProjectId);
+    }
+    setActiveProjectId(null);
   }
 
   function renderDeleteModal() {
@@ -356,7 +372,7 @@ export default function App() {
     return (
       <div className="app-wrap editor-wrap">
         <div className="editor-nav">
-          <button type="button" className="back-button" onClick={() => setActiveProjectId(null)}>← Cancel</button>
+          <button type="button" className="back-button" onClick={cancelEditing}>← Cancel</button>
           <button type="button" className="save-button" onClick={saveProjects}>{saveNotice || 'Save'}</button>
         </div>
         <header className="top editor-top">
@@ -389,7 +405,7 @@ export default function App() {
       </header>
 
       <div className="toolbar">
-        <button type="button" className="primary" onClick={() => { addProject(); setActiveProjectId(idCounter); }}>
+        <button type="button" className="primary" onClick={addProject}>
           + New video
         </button>
         <button

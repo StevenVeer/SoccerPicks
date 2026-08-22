@@ -1,3 +1,15 @@
+export async function deleteArchivedProject(project) {
+  if (!project?.clientId) return null;
+  try {
+    const response = await fetch(`/api/archive/${encodeURIComponent(project.clientId)}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Delete request failed with status ${response.status}`);
+    return true;
+  } catch (error) {
+    console.warn('Deleting archived project failed, local storage is unaffected:', error);
+    return null;
+  }
+}
+
 export async function archiveProject(project, media) {
   if (!project?.clientId) return null;
   try {
