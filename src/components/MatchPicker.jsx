@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { buildPickGroups } from '../lib/pickTemplates';
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
@@ -42,9 +43,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const [leagues, setLeagues] = useState([]);
   const [leagueId, setLeagueId] = useState('all');
   const [selectedMatch, setSelectedMatch] = useState(null);
-  const [odds, setOdds] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [oddsLoading, setOddsLoading] = useState(false);
   const [error, setError] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(`${date}T12:00:00Z`));
@@ -54,7 +53,6 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
     setLoading(true);
     setError('');
     setSelectedMatch(null);
-    setOdds(null);
     fetch(`/api/football/matches?date=${date}`)
       .then(async (response) => {
         const data = await response.json();
@@ -80,43 +78,26 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   function selectMatch(match) {
     if (selectedMatch?.id === match.id) {
       setSelectedMatch(null);
-      setOdds(null);
-      setOddsLoading(false);
       setError('');
       return;
     }
     setSelectedMatch(match);
-    setOdds(null);
-    setOddsLoading(true);
     setError('');
-    fetch(`/api/football/odds?fixture=${match.id}&sport=${encodeURIComponent(match.sportKey)}`)
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Odds could not be loaded.');
-        return data;
-      })
-      .then(setOdds)
-      .catch((fetchError) => setError(fetchError.message))
-      .finally(() => setOddsLoading(false));
   }
 
-  function addOutcome(market, outcome) {
-    onAddPick({
-      match: `${selectedMatch.home} - ${selectedMatch.away}`,
-      pick: outcome.label,
-      odds: outcome.odds,
-      market: market.name,
-      bookmaker: outcome.bookmaker || odds.bookmaker,
-      oddsUpdatedAt: odds.updatedAt,
-    });
-  }
-
-  function isOutcomeAdded(market, outcome) {
+  function isOutcomeAdded(option) {
     return picks.some((pick) => (
       pick.match === `${selectedMatch.home} - ${selectedMatch.away}` &&
-      pick.pick === outcome.label &&
-      pick.market === market.name
+      pick.pick === option.label
     ));
+  }
+
+  function togglePick(option) {
+    onAddPick({
+      match: `${selectedMatch.home} - ${selectedMatch.away}`,
+      pick: option.label,
+      odds: 1.01,
+    });
   }
 
   const visibleMatches = leagueId === 'all'
@@ -131,6 +112,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const today = new Date().toISOString().slice(0, 10);
   const quickDates = [today, shiftDate(today, 1)];
   const days = calendarDays(calendarMonth);
+  const pickGroups = selectedMatch ? buildPickGroups(selectedMatch) : [];
 
   function chooseDate(nextDate) {
     setDate(nextDate);
@@ -141,8 +123,6 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   function changeLeague(nextLeague) {
     setLeagueId(nextLeague);
     setSelectedMatch(null);
-    setOdds(null);
-    setOddsLoading(false);
     setError('');
   }
 
@@ -207,7 +187,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
             {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
           </select>
         </div>
-        <span className="data-note">{matches.length} matches · odds on demand</span>
+        <span className="data-note">{matches.length} matches</span>
       </div>
 
       {loading && <div className="picker-message">Loading matches…</div>}
@@ -244,37 +224,57 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
         <div className="odds-panel">
           <div className="odds-panel-heading">
             <div>
-              <span className="section-kicker">Markets</span>
+              <span className="section-kicker">Picks</span>
               <h3>{selectedMatch.home} vs {selectedMatch.away}</h3>
             </div>
-            {odds?.bookmaker && <small>{odds.bookmaker}</small>}
           </div>
-          {oddsLoading && <div className="picker-message">Loading odds…</div>}
-          {!oddsLoading && odds && odds.markets.length === 0 && (
-            <div className="picker-message">No odds available for this match.</div>
-          )}
-          <div className="market-list">
-            {odds?.markets.map((market) => (
-              <div className="market" key={market.name}>
-                <b>{market.name}</b>
+          {pickGroups.map((group) => (
+            <div className="market" key={group.title}>
+              <b>{group.title}</b>
+              {group.options && (
                 <div className="outcome-list">
-                  {market.outcomes.map((outcome) => (
-                    <button
-                      type="button"
-                      className={isOutcomeAdded(market, outcome) ? 'added' : ''}
-                      key={`${market.name}-${outcome.label}`}
-                      onClick={() => addOutcome(market, outcome)}
-                      disabled={disabled && !isOutcomeAdded(market, outcome)}
-                    >
-                      <span>{outcome.label}</span>
-                      {isOutcomeAdded(market, outcome) && <em>Added</em>}
-                      <strong>{outcome.odds.toFixed(2)}</strong>
-                    </button>
+                  {group.options.map((option) => {
+                    const added = isOutcomeAdded(option);
+                    return (
+                      <button
+                        type="button"
+                        className={added ? 'added' : ''}
+                        key={option.key}
+                        onClick={() => togglePick(option)}
+                        disabled={disabled && !added}
+                      >
+                        <span>{option.short || option.label}</span>
+                        {added && <em>Added</em>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {group.goalRows && (
+                <div className="goal-grid">
+                  {group.goalRows.map(({ line, over, under }) => (
+                    <div className="goal-row" key={line}>
+                      {[over, under].map((option) => {
+                        const added = isOutcomeAdded(option);
+                        return (
+                          <button
+                            type="button"
+                            className={`goal-option${added ? ' added' : ''}`}
+                            key={option.key}
+                            onClick={() => togglePick(option)}
+                            disabled={disabled && !added}
+                          >
+                            <span className="goal-option-label">{option.short}</span>
+                            {added && <em>Added</em>}
+                          </button>
+                        );
+                      })}
+                    </div>
                   ))}
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </section>

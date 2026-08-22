@@ -5,6 +5,7 @@
   --gold: #e8b23d;
   --red: #e14b4b;
   --ink: #0a1210;
+  color-scheme: dark;
 }
 
 * {
@@ -708,6 +709,54 @@ input:focus {
 .outcome-list button:hover strong {
   color: var(--ink);
 }
+.goal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 7px;
+}
+.goal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.goal-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  background: rgba(10, 18, 16, 0.48);
+  border: 1px solid rgba(232, 178, 61, 0.45);
+  border-radius: 7px;
+  color: var(--chalk);
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  padding: 9px 11px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.goal-option:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+.goal-option.added {
+  background: rgba(232, 178, 61, 0.16);
+  border-color: var(--gold);
+}
+.goal-option-label {
+  opacity: 0.75;
+}
+.goal-option.added em {
+  color: var(--gold);
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .picker-message {
   color: rgba(244, 242, 232, 0.5);
   font-family: 'Space Mono', monospace;
@@ -799,9 +848,33 @@ input:focus {
   color: var(--chalk);
   font-weight: 500;
 }
-.pick-row .odds {
+.pick-row-odds {
+  flex-shrink: 0;
+}
+.pick-row-odds input[type='number'] {
+  width: 62px;
+  height: 30px;
+  margin-bottom: 0;
+  padding: 0 8px;
+  background: rgba(10, 18, 16, 0.48);
+  border: 1px solid rgba(232, 178, 61, 0.45);
+  border-radius: 7px;
   color: var(--gold);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
   font-weight: 700;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.pick-row-odds input[type='number']::-webkit-inner-spin-button,
+.pick-row-odds input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+.pick-row-odds input[type='number']:focus {
+  border-color: var(--gold);
+  outline: none;
 }
 .pick-row button.del {
   flex-shrink: 0;

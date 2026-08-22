@@ -32,6 +32,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [draggedPickIndex, setDraggedPickIndex] = useState(null);
   const [editingPickIndex, setEditingPickIndex] = useState(null);
+  const [rowOddsDrafts, setRowOddsDrafts] = useState({});
   const [descriptionCopied, setDescriptionCopied] = useState(false);
 
   // Redraw the static preview whenever the project data changes.
@@ -144,6 +145,24 @@ const ProjectCard = forwardRef(function ProjectCard(
 
   function removePick(index) {
     onChange({ ...project, picks: project.picks.filter((_, i) => i !== index) });
+  }
+
+  function updateRowOdds(index, value) {
+    setRowOddsDrafts((prev) => ({ ...prev, [index]: value }));
+    const parsed = parseFloat(value);
+    if (!Number.isNaN(parsed)) {
+      const updatedPicks = project.picks.map((pick, i) => (i === index ? { ...pick, odds: parsed } : pick));
+      onChange({ ...project, picks: updatedPicks });
+    }
+  }
+
+  function commitRowOdds(index) {
+    setRowOddsDrafts((prev) => {
+      if (!(index in prev)) return prev;
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
   }
 
   function clearPicks() {
@@ -376,7 +395,18 @@ const ProjectCard = forwardRef(function ProjectCard(
                 <span className="drag-handle" aria-hidden="true">⋮⋮</span>
                 <div className="info">
                   <b>{p.match}</b>
-                  {p.pick} · <span className="odds">{p.odds.toFixed(2)}</span>
+                  {p.pick}
+                </div>
+                <div className="pick-row-odds" onClick={(event) => event.stopPropagation()}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1.01"
+                    value={i in rowOddsDrafts ? rowOddsDrafts[i] : p.odds}
+                    onChange={(event) => updateRowOdds(i, event.target.value)}
+                    onBlur={() => commitRowOdds(i)}
+                    aria-label="Odds"
+                  />
                 </div>
                 <button type="button" className="del" onClick={(event) => { event.stopPropagation(); removePick(i); }} title="Remove">
                   ✕

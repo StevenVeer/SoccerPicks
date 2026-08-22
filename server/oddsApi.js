@@ -12,9 +12,8 @@ const LEAGUES = [
 ];
 
 const matchesCache = new Map();
-const oddsCache = new Map();
-const MATCH_CACHE_MS = 15 * 60 * 1000;
-const ODDS_CACHE_MS = 60 * 1000;
+const MATCH_CACHE_MS = 6 * 60 * 60 * 1000;
+const CACHE_ENTRY_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
 
 async function apiRequest(path, apiKey) {
   const separator = path.includes('?') ? '&' : '?';
@@ -24,71 +23,7 @@ async function apiRequest(path, apiKey) {
   return data;
 }
 
-function normalizeMarkets(bookmakers, homeTeam, awayTeam) {
-  if (!bookmakers?.length) return { bookmaker: null, markets: [], updatedAt: null };
-
-  const marketDefinitions = [
-    { key: 'h2h', name: 'Match Winner' },
-    { key: 'totals', name: 'Goals Over/Under' },
-    { key: 'btts', name: 'Both Teams To Score' },
-    { key: 'draw_no_bet', name: 'Draw No Bet' },
-    { key: 'double_chance', name: 'Double Chance' },
-  ];
-  const markets = marketDefinitions.flatMap(({ key, name }) => {
-    const available = bookmakers.flatMap((bookmaker) => (
-      bookmaker.markets
-        .filter((market) => market.key === key)
-        .flatMap((market) => market.outcomes
-          .filter((outcome) => key !== 'totals' || [1.5, 2.5, 3.5].includes(Number(outcome.point)))
-          .map((outcome) => ({
-            label: outcome.point ? `${outcome.name} ${outcome.point}` : outcome.name,
-            odds: Number(outcome.price),
-            point: Number(outcome.point),
-            bookmaker: bookmaker.title,
-            updatedAt: market.last_update || bookmaker.last_update,
-          })))
-    ));
-    const bestByLabel = new Map();
-    available.forEach((outcome) => {
-      const current = bestByLabel.get(outcome.label);
-      if (!current || outcome.odds > current.odds) bestByLabel.set(outcome.label, outcome);
-    });
-    const outcomes = [...bestByLabel.values()];
-    if (key === 'h2h' && homeTeam && awayTeam) {
-      const normalizedHome = homeTeam.toLowerCase();
-      const normalizedAway = awayTeam.toLowerCase();
-      const outcomeOrder = (outcome) => {
-        const label = outcome.label.toLowerCase();
-        if (label === normalizedHome) return 0;
-        if (label === 'draw' || label === 'tie') return 1;
-        if (label === normalizedAway) return 2;
-        return 3;
-      };
-      outcomes.sort((first, second) => outcomeOrder(first) - outcomeOrder(second));
-    }
-    if (key === 'totals') {
-      outcomes.sort((first, second) => (
-        first.point - second.point ||
-        (first.label.startsWith('Over') ? -1 : 1)
-      ));
-    }
-    if (!outcomes.length) return [];
-    return [{
-      name,
-      outcomes,
-      updatedAt: outcomes.map((outcome) => outcome.updatedAt).sort().at(-1),
-    }];
-  });
-
-  return {
-    bookmaker: 'Beste beschikbare odds',
-    markets,
-    updatedAt: markets.map((market) => market.updatedAt).sort().at(-1) || null,
-  };
-}
-
 function normalizeMatch(event, league) {
-  const normalizedOdds = normalizeMarkets(event.bookmakers, event.home_team, event.away_team);
   return {
     id: event.id,
     sportKey: league.key,
@@ -98,9 +33,6 @@ function normalizeMatch(event, league) {
     away: event.away_team,
     league: league.name,
     country: league.country,
-    bookmaker: normalizedOdds.bookmaker,
-    markets: normalizedOdds.markets,
-    oddsUpdatedAt: normalizedOdds.updatedAt,
   };
 }
 
@@ -109,6 +41,15 @@ function dateBounds(date) {
     from: `${date}T00:00:00Z`,
     to: `${date}T23:59:59Z`,
   };
+}
+
+function pruneStaleCacheEntries() {
+  const cutoff = Date.now() - CACHE_ENTRY_MAX_AGE_MS;
+  for (const dateKey of matchesCache.keys()) {
+    if (new Date(`${dateKey}T00:00:00Z`).getTime() < cutoff) {
+      matchesCache.delete(dateKey);
+    }
+  }
 }
 
 export function oddsApiPlugin() {
@@ -128,6 +69,7 @@ export function oddsApiPlugin() {
         const url = new URL(request.url, 'http://localhost');
         try {
           if (url.pathname === '/matches') {
+            pruneStaleCacheEntries();
             const date = url.searchParams.get('date') || new Date().toISOString().slice(0, 10);
             const cached = matchesCache.get(date);
             if (cached && cached.expiresAt > Date.now() && cached.value.matches.length > 0) {
@@ -139,8 +81,8 @@ export function oddsApiPlugin() {
             const results = [];
             for (const league of LEAGUES) {
               try {
-                const query = `?regions=eu&markets=h2h,totals&commenceTimeFrom=${encodeURIComponent(bounds.from)}&commenceTimeTo=${encodeURIComponent(bounds.to)}`;
-                const events = await apiRequest(`/sports/${league.key}/odds/${query}`, apiKey);
+                const query = `?commenceTimeFrom=${encodeURIComponent(bounds.from)}&commenceTimeTo=${encodeURIComponent(bounds.to)}`;
+                const events = await apiRequest(`/sports/${league.key}/events${query}`, apiKey);
                 results.push(events.map((event) => normalizeMatch(event, league)));
               } catch {
                 results.push([]);
@@ -151,29 +93,6 @@ export function oddsApiPlugin() {
               leagues: LEAGUES.map(({ key, ...league }) => ({ id: key, ...league })),
             };
             matchesCache.set(date, { value, expiresAt: Date.now() + MATCH_CACHE_MS });
-            response.end(JSON.stringify(value));
-            return;
-          }
-
-          if (url.pathname === '/odds') {
-            const fixtureId = url.searchParams.get('fixture');
-            const sportKey = url.searchParams.get('sport');
-            if (!fixtureId || !sportKey) {
-              response.statusCode = 400;
-              response.end(JSON.stringify({ error: 'fixture and sport are required' }));
-              return;
-            }
-            const cached = oddsCache.get(fixtureId);
-            if (cached && cached.expiresAt > Date.now()) {
-              response.end(JSON.stringify(cached.value));
-              return;
-            }
-            const events = await apiRequest(
-              `/sports/${sportKey}/events/${fixtureId}/odds/?regions=eu&markets=h2h,totals,btts,draw_no_bet,double_chance`,
-              apiKey
-            );
-            const value = normalizeMarkets(events.bookmakers, events.home_team, events.away_team);
-            oddsCache.set(fixtureId, { value, expiresAt: Date.now() + ODDS_CACHE_MS });
             response.end(JSON.stringify(value));
             return;
           }
