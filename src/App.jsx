@@ -403,9 +403,16 @@ export default function App() {
               </div>
               <div className="video-item-actions">
                 <button type="button" className="primary" onClick={() => setActiveProjectId(p.id)}>Open editor</button>
-                {media[p.id]?.videoUrl && <a className="text-action" href={media[p.id].videoUrl} download={`${slugify(p.title)}-${dateStamp()}.webm`}>Download video</a>}
-                {media[p.id]?.resultUrl && <a className="text-action" href={media[p.id].resultUrl} download={`${slugify(p.title)}-${p.result}.png`}>Download image</a>}
-                <div className="result-actions"><button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')}>Hit</button><button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')}>Miss</button><button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>{p.status === 'posted' ? 'Posted' : 'Mark posted'}</button></div>
+                {(media[p.id]?.videoUrl || media[p.id]?.resultUrl) && (
+                  <details className="download-menu">
+                    <summary>Download</summary>
+                    <div className="download-menu-options">
+                      {media[p.id]?.videoUrl && <a href={media[p.id].videoUrl} download={`${slugify(p.title)}-${dateStamp()}.webm`}>Download video</a>}
+                      {media[p.id]?.resultUrl && <a href={media[p.id].resultUrl} download={`${slugify(p.title)}-${p.result}.png`}>Download image</a>}
+                    </div>
+                  </details>
+                )}
+                <div className="result-actions"><button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')} disabled={Boolean(p.result)}>Hit</button><button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')} disabled={Boolean(p.result)}>Miss</button><button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>{p.status === 'posted' ? 'Posted' : 'Mark posted'}</button></div>
               </div>
             </div>
           </article>
