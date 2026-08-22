@@ -16,7 +16,7 @@ Follow for daily football predictions & value bets 📈
 }
 
 const ProjectCard = forwardRef(function ProjectCard(
-  { project, onChange, onRemove, onDuplicate, onVideoReady },
+  { project, existingVideoUrl, onChange, onRemove, onDuplicate, onVideoReady },
   ref
 ) {
   const canvasRef = useRef(null);
@@ -31,6 +31,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [videoUrl, setVideoUrl] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [draggedPickIndex, setDraggedPickIndex] = useState(null);
+  const [editingPickIndex, setEditingPickIndex] = useState(null);
   const [descriptionCopied, setDescriptionCopied] = useState(false);
 
   // Redraw the static preview whenever the project data changes.
@@ -81,15 +82,40 @@ const ProjectCard = forwardRef(function ProjectCard(
       setError('Enter both teams, a pick, and valid odds (≥ 1.01).');
       return;
     }
-    if (project.picks.length >= 8) {
+    if (editingPickIndex === null && project.picks.length >= 8) {
       setError('You have reached the maximum of 8 picks.');
       return;
     }
-    onChange({ ...project, picks: [...project.picks, { match, pick: pickText, odds }] });
+    const updatedPick = { ...project.picks[editingPickIndex], match, pick: pickText, odds };
+    const updatedPicks = editingPickIndex === null
+      ? [...project.picks, updatedPick]
+      : project.picks.map((currentPick, index) => index === editingPickIndex ? updatedPick : currentPick);
+    onChange({ ...project, picks: updatedPicks });
     setHomeTeamInput('');
     setAwayTeamInput('');
     setPickInput('');
     setOddsInput('');
+    setEditingPickIndex(null);
+  }
+
+  function editPick(index) {
+    const pick = project.picks[index];
+    const [homeTeam, ...awayTeamParts] = pick.match.split(' - ');
+    setHomeTeamInput(homeTeam || '');
+    setAwayTeamInput(awayTeamParts.join(' - '));
+    setPickInput(pick.pick || '');
+    setOddsInput(Number(pick.odds).toFixed(2));
+    setEditingPickIndex(index);
+    setError('');
+  }
+
+  function cancelEdit() {
+    setHomeTeamInput('');
+    setAwayTeamInput('');
+    setPickInput('');
+    setOddsInput('');
+    setEditingPickIndex(null);
+    setError('');
   }
 
   function addLivePick(pick) {
@@ -197,7 +223,8 @@ const ProjectCard = forwardRef(function ProjectCard(
       setVideoUrl(url);
       setStatus('done');
       renderCanvas(canvasRef.current.getContext('2d'), PREVIEW_T, project);
-      if (onVideoReady) onVideoReady(project.id, blob, url);
+      const overviewBlob = await new Promise((resolve) => canvasRef.current.toBlob(resolve, 'image/png'));
+      if (onVideoReady) onVideoReady(project.id, blob, url, overviewBlob);
       return blob;
     } catch (err) {
       setStatus('error');
@@ -224,7 +251,7 @@ const ProjectCard = forwardRef(function ProjectCard(
           <button type="button" onClick={onDuplicate} title="Duplicate">
             ⧉
           </button>
-          <button type="button" onClick={onRemove} title="Remove">
+          <button type="button" onClick={onRemove} title={project.status === 'posted' ? 'Posted videos cannot be deleted' : 'Remove'} disabled={project.status === 'posted'}>
             ✕
           </button>
         </div>
@@ -299,11 +326,16 @@ const ProjectCard = forwardRef(function ProjectCard(
               </div>
               <div className="add-btn-wrap">
                 <button type="submit" className="primary small">
-                  +
+                  {editingPickIndex === null ? '+' : '✓'}
                 </button>
               </div>
             </div>
           </form>
+          {editingPickIndex !== null && (
+            <button type="button" className="cancel-pick-edit" onClick={cancelEdit}>
+              Cancel edit
+            </button>
+          )}
           {error && <div className="error">{error}</div>}
 
           <div className="pick-list-heading">
@@ -323,13 +355,15 @@ const ProjectCard = forwardRef(function ProjectCard(
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => handlePickDrop(event, i)}
                 onDragEnd={() => setDraggedPickIndex(null)}
+                onClick={() => editPick(i)}
+                title="Click to edit pick"
               >
                 <span className="drag-handle" aria-hidden="true">⋮⋮</span>
                 <div className="info">
                   <b>{p.match}</b>
                   {p.pick} · <span className="odds">{p.odds.toFixed(2)}</span>
                 </div>
-                <button type="button" className="del" onClick={() => removePick(i)} title="Remove">
+                <button type="button" className="del" onClick={(event) => { event.stopPropagation(); removePick(i); }} title="Remove">
                   ✕
                 </button>
               </div>
@@ -378,10 +412,10 @@ const ProjectCard = forwardRef(function ProjectCard(
             {status === 'recording' ? 'Recording…' : `Generate video (${duration}s)`}
           </button>
 
-          {videoUrl && (
+          {(videoUrl || existingVideoUrl) && (
             <a
               className="primary download-link"
-              href={videoUrl}
+              href={videoUrl || existingVideoUrl}
               download={`${slugify(project.title)}-${dateStamp()}.webm`}
             >
               Download
