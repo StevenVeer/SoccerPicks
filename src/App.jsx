@@ -85,6 +85,10 @@ export default function App() {
   const [postingCalendarMonth, setPostingCalendarMonth] = useState(() => new Date(`${todayDate()}T12:00:00Z`));
   const [postingCalendarOpen, setPostingCalendarOpen] = useState(false);
   const [deleteConfirmProjectId, setDeleteConfirmProjectId] = useState(null);
+  const [generatingIds, setGeneratingIds] = useState({});
+  const [videoModalProjectId, setVideoModalProjectId] = useState(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const videoModalRef = useRef(null);
   const [zipping, setZipping] = useState(false);
   const cardRefs = useRef({});
 
@@ -213,6 +217,16 @@ export default function App() {
     const nextMedia = { ...oldMedia, videoBlob: blob, videoUrl: url, overviewBlob, overviewUrl: overviewBlob ? URL.createObjectURL(overviewBlob) : null };
     setMedia((prev) => ({ ...prev, [id]: nextMedia }));
     saveMedia(id, { videoBlob: blob, overviewBlob, resultBlob: oldMedia?.resultBlob, result: oldMedia?.result }).catch(() => {});
+    setGeneratingIds((prev) => { const next = { ...prev }; delete next[id]; return next; });
+  }
+
+  function startBackgroundGeneration(id) {
+    setGeneratingIds((prev) => ({ ...prev, [id]: true }));
+    setActiveProjectId(null);
+  }
+
+  function finishBackgroundGeneration(id) {
+    setGeneratingIds((prev) => { const next = { ...prev }; delete next[id]; return next; });
   }
 
   async function markResult(id, result) {
@@ -283,6 +297,7 @@ export default function App() {
 
   const readyCount = projects.filter((p) => media[p.id]?.videoBlob).length;
   const activeProject = projects.find((project) => project.id === activeProjectId);
+  const videoModalProject = projects.find((project) => project.id === videoModalProjectId);
 
   function saveProjects() {
     localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
@@ -307,6 +322,16 @@ export default function App() {
     );
   }
 
+  function openVideoModal(id) {
+    setVideoModalProjectId(id);
+    setVideoPlaying(false);
+  }
+
+  function playVideo() {
+    videoModalRef.current?.play();
+    setVideoPlaying(true);
+  }
+
   if (activeProject) {
     return (
       <div className="app-wrap editor-wrap">
@@ -326,6 +351,8 @@ export default function App() {
           onChange={(updated) => updateProject(activeProject.id, updated)}
           onRemove={() => requestDeleteProject(activeProject.id)}
           onDuplicate={() => duplicateProject(activeProject.id)}
+          onGenerationStart={() => startBackgroundGeneration(activeProject.id)}
+          onGenerationEnd={() => finishBackgroundGeneration(activeProject.id)}
           onVideoReady={handleVideoReady}
         />
         {renderDeleteModal()}
@@ -365,11 +392,11 @@ export default function App() {
         {projects.map((p) => (
           <article className="video-item" key={p.id}>
             <button type="button" className="video-item-delete" onClick={() => requestDeleteProject(p.id)} aria-label={`Delete ${p.title}`} title="Delete video">×</button>
-            <div className="video-thumb">
+            <button type="button" className="video-thumb video-thumb-button" onClick={() => openVideoModal(p.id)} disabled={!media[p.id]?.videoUrl} aria-label={`Play ${p.title}`}>
               {media[p.id]?.resultUrl || media[p.id]?.overviewUrl ? <img src={media[p.id].resultUrl || media[p.id].overviewUrl} alt={`${p.title} ${p.result || 'overview'} result`} /> : <div className="thumb-placeholder">{mediaLoading ? 'Loading…' : media[p.id]?.videoBlob ? 'Generated' : 'Not generated'}</div>}
-            </div>
+            </button>
             <div className="video-item-info">
-              <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
+              <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : generatingIds[p.id] ? 'Generating…' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
               <h2>{p.title}</h2>
               <div className="video-picks-description">
                 {p.picks.length > 0 ? p.picks.map((pick, index) => <span key={`${pick.match}-${index}`}>{pick.pick} · {Number(pick.odds).toFixed(2)}</span>) : <span>No picks added yet</span>}
@@ -422,6 +449,23 @@ export default function App() {
         </div>
       )}
       {renderDeleteModal()}
+      {videoModalProject && media[videoModalProject.id]?.videoUrl && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVideoModalProjectId(null); }}>
+          <div className="video-modal" role="dialog" aria-modal="true" aria-labelledby="video-modal-title">
+            <div className="video-modal-header">
+              <div>
+                <span className="section-kicker">Video preview</span>
+                <h2 id="video-modal-title">{videoModalProject.title}</h2>
+              </div>
+              <button type="button" className="modal-close" onClick={() => setVideoModalProjectId(null)} aria-label="Close video preview">×</button>
+            </div>
+            <div className="video-player-shell">
+              <video ref={videoModalRef} src={media[videoModalProject.id].videoUrl} poster={media[videoModalProject.id].overviewUrl} onEnded={() => setVideoPlaying(false)} playsInline />
+              {!videoPlaying && <button type="button" className="video-play-button" onClick={playVideo} aria-label="Play video">▶</button>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

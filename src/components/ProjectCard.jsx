@@ -16,7 +16,7 @@ Follow for daily football predictions & value bets 📈
 }
 
 const ProjectCard = forwardRef(function ProjectCard(
-  { project, existingVideoUrl, onChange, onRemove, onDuplicate, onVideoReady },
+  { project, existingVideoUrl, onChange, onRemove, onDuplicate, onGenerationStart, onGenerationEnd, onVideoReady },
   ref
 ) {
   const canvasRef = useRef(null);
@@ -212,6 +212,7 @@ const ProjectCard = forwardRef(function ProjectCard(
     setError('');
     setStatus('recording');
     setProgress(0);
+    if (onGenerationStart) onGenerationStart(project.id);
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
       setVideoUrl(null);
@@ -236,6 +237,8 @@ const ProjectCard = forwardRef(function ProjectCard(
       setStatus('error');
       setError(err.message || 'Video recording failed.');
       return null;
+    } finally {
+      if (onGenerationEnd) onGenerationEnd(project.id);
     }
   }
 
