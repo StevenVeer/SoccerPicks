@@ -7,6 +7,18 @@ import { PREVIEW_T, renderCanvas } from './lib/canvasRenderer';
 let idCounter = 1;
 const PROJECTS_STORAGE_KEY = 'soccer-picks-projects';
 
+function todayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function postedTitle(value) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${value}T12:00:00Z`));
+}
+
 function createOverviewBlob(project) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
@@ -45,6 +57,8 @@ export default function App() {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [mediaLoading, setMediaLoading] = useState(true);
   const [saveNotice, setSaveNotice] = useState('');
+  const [postingProjectId, setPostingProjectId] = useState(null);
+  const [postingDate, setPostingDate] = useState(todayDate);
   const [zipping, setZipping] = useState(false);
   const cardRefs = useRef({});
 
@@ -136,8 +150,17 @@ export default function App() {
     delete cardRefs.current[id];
   }
 
-  function markPosted(id) {
-    setProjects((prev) => prev.map((project) => project.id === id ? { ...project, status: 'posted' } : project));
+  function openPostingDate(id) {
+    setPostingProjectId(id);
+    setPostingDate(todayDate());
+  }
+
+  function markPosted() {
+    if (!postingProjectId || !postingDate) return;
+    setProjects((prev) => prev.map((project) => project.id === postingProjectId
+      ? { ...project, status: 'posted', postedDate: postingDate, title: postedTitle(postingDate) }
+      : project));
+    setPostingProjectId(null);
   }
 
   function handleVideoReady(id, blob, url, overviewBlob) {
@@ -288,13 +311,21 @@ export default function App() {
               <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
               <h2>{p.title}</h2>
               <div className="video-picks-description">
-                {p.picks.length > 0 ? p.picks.map((pick, index) => <span key={`${pick.match}-${index}`}>{pick.match} · {pick.pick} · {Number(pick.odds).toFixed(2)}</span>) : <span>No picks added yet</span>}
+                {p.picks.length > 0 ? p.picks.map((pick, index) => <span key={`${pick.match}-${index}`}>{pick.pick} · {Number(pick.odds).toFixed(2)}</span>) : <span>No picks added yet</span>}
               </div>
               <div className="video-item-actions">
                 <button type="button" className="primary" onClick={() => setActiveProjectId(p.id)}>Open editor</button>
                 {media[p.id]?.videoUrl && <a className="text-action" href={media[p.id].videoUrl} download={`${slugify(p.title)}-${dateStamp()}.webm`}>Download video</a>}
                 {media[p.id]?.resultUrl && <a className="text-action" href={media[p.id].resultUrl} download={`${slugify(p.title)}-${p.result}.png`}>Download image</a>}
-                <div className="result-actions"><button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')}>Hit</button><button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')}>Miss</button><button type="button" className="posted-button" onClick={() => markPosted(p.id)} disabled={p.status === 'posted'}>{p.status === 'posted' ? 'Posted' : 'Mark posted'}</button></div>
+                <div className="result-actions"><button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')}>Hit</button><button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')}>Miss</button><button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>{p.status === 'posted' ? 'Posted' : 'Mark posted'}</button></div>
+                {postingProjectId === p.id && (
+                  <div className="posting-date-picker">
+                    <label htmlFor={`posted-date-${p.id}`}>Posted date</label>
+                    <input id={`posted-date-${p.id}`} type="date" value={postingDate} onChange={(event) => setPostingDate(event.target.value)} />
+                    <button type="button" onClick={() => setPostingDate(todayDate())}>Today</button>
+                    <button type="button" className="confirm-posted" onClick={markPosted}>Post</button>
+                  </div>
+                )}
               </div>
             </div>
           </article>

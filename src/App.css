@@ -236,6 +236,51 @@ input:focus {
   grid-template-columns: 1fr 1fr 46px;
   gap: 10px;
 }
+.odds-input-control {
+  position: relative;
+}
+.odds-input-control input[type='number'] {
+  padding-right: 34px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.odds-input-control input[type='number']::-webkit-inner-spin-button,
+.odds-input-control input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+.odds-stepper {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: flex;
+  flex-direction: column;
+  width: 27px;
+  height: calc(100% - 2px);
+  overflow: hidden;
+  border-left: 1px solid rgba(232, 178, 61, 0.35);
+  border-radius: 0 8px 8px 0;
+}
+.odds-stepper button {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  background: rgba(232, 178, 61, 0.08);
+  border: 0;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.odds-stepper button + button {
+  border-top: 1px solid rgba(232, 178, 61, 0.25);
+}
+.odds-stepper button:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
 
 .match-picker {
   margin: 20px 0;
@@ -974,6 +1019,12 @@ canvas {
 .miss-button { background: rgba(190, 56, 61, 0.14); border-color: #be383d; color: #ed777b; }
 .posted-button { background: rgba(232, 178, 61, 0.14); border-color: var(--gold); color: var(--gold); }
 .posted-button:disabled { cursor: not-allowed; opacity: 0.55; }
+.posting-date-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; }
+.posting-date-picker label { margin: 0; color: rgba(244, 242, 232, 0.5); font-size: 9px; }
+.posting-date-picker input { width: auto; min-width: 132px; margin: 0; padding: 6px 7px; font-size: 10px; }
+.posting-date-picker button { background: transparent; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 6px; color: var(--gold); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 10px; padding: 6px 8px; text-transform: uppercase; }
+.posting-date-picker button:hover { background: rgba(232, 178, 61, 0.12); }
+.posting-date-picker .confirm-posted { background: var(--gold); color: var(--ink); font-weight: 700; }
 .pick-row:hover { background: rgba(232, 178, 61, 0.06); }
 .cancel-pick-edit { background: transparent; border: 1px solid rgba(244, 242, 232, 0.25); border-radius: 6px; color: rgba(244, 242, 232, 0.65); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 0.06em; padding: 5px 8px; text-transform: uppercase; }
 .cancel-pick-edit:hover { border-color: var(--gold); color: var(--gold); }

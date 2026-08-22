@@ -69,6 +69,12 @@ const ProjectCard = forwardRef(function ProjectCard(
     if (!Number.isNaN(odds)) setOddsInput(odds.toFixed(2));
   }
 
+  function changeOdds(amount) {
+    const currentOdds = parseFloat(oddsInput);
+    const nextOdds = (Number.isNaN(currentOdds) ? 1.01 : currentOdds) + amount;
+    setOddsInput(Math.max(1.01, nextOdds).toFixed(2));
+  }
+
   function addPick(e) {
     e.preventDefault();
     setError('');
@@ -313,16 +319,22 @@ const ProjectCard = forwardRef(function ProjectCard(
               </div>
               <div>
                 <label htmlFor={`odds-${project.id}`}>Odds</label>
-                <input
-                  id={`odds-${project.id}`}
-                  type="number"
-                  step="0.01"
-                  min="1.01"
-                  placeholder="1.85"
-                  value={oddsInput}
-                  onChange={(e) => setOddsInput(e.target.value)}
-                  onBlur={formatOddsInput}
-                />
+                <div className="odds-input-control">
+                  <input
+                    id={`odds-${project.id}`}
+                    type="number"
+                    step="0.01"
+                    min="1.01"
+                    placeholder="1.85"
+                    value={oddsInput}
+                    onChange={(e) => setOddsInput(e.target.value)}
+                    onBlur={formatOddsInput}
+                  />
+                  <div className="odds-stepper">
+                    <button type="button" onClick={() => changeOdds(0.01)} aria-label="Increase odds">+</button>
+                    <button type="button" onClick={() => changeOdds(-0.01)} aria-label="Decrease odds">−</button>
+                  </div>
+                </div>
               </div>
               <div className="add-btn-wrap">
                 <button type="submit" className="primary small">
