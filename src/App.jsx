@@ -19,6 +19,22 @@ function postedTitle(value) {
   }).format(new Date(`${value}T12:00:00Z`));
 }
 
+function calendarDays(month) {
+  const firstDay = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1));
+  const startOffset = (firstDay.getUTCDay() + 6) % 7;
+  const daysInMonth = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0)).getUTCDate();
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = index - startOffset + 1;
+    return day > 0 && day <= daysInMonth
+      ? new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), day))
+      : null;
+  });
+}
+
+function monthLabel(value) {
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(value);
+}
+
 function createOverviewBlob(project) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
@@ -59,6 +75,8 @@ export default function App() {
   const [saveNotice, setSaveNotice] = useState('');
   const [postingProjectId, setPostingProjectId] = useState(null);
   const [postingDate, setPostingDate] = useState(todayDate);
+  const [postingCalendarMonth, setPostingCalendarMonth] = useState(() => new Date(`${todayDate()}T12:00:00Z`));
+  const [postingCalendarOpen, setPostingCalendarOpen] = useState(false);
   const [deleteConfirmProjectId, setDeleteConfirmProjectId] = useState(null);
   const [zipping, setZipping] = useState(false);
   const cardRefs = useRef({});
@@ -167,7 +185,10 @@ export default function App() {
 
   function openPostingDate(id) {
     setPostingProjectId(id);
-    setPostingDate(todayDate());
+    const date = todayDate();
+    setPostingDate(date);
+    setPostingCalendarMonth(new Date(`${date}T12:00:00Z`));
+    setPostingCalendarOpen(false);
   }
 
   function markPosted() {
@@ -351,14 +372,6 @@ export default function App() {
                 {media[p.id]?.videoUrl && <a className="text-action" href={media[p.id].videoUrl} download={`${slugify(p.title)}-${dateStamp()}.webm`}>Download video</a>}
                 {media[p.id]?.resultUrl && <a className="text-action" href={media[p.id].resultUrl} download={`${slugify(p.title)}-${p.result}.png`}>Download image</a>}
                 <div className="result-actions"><button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')}>Hit</button><button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')}>Miss</button><button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>{p.status === 'posted' ? 'Posted' : 'Mark posted'}</button></div>
-                {postingProjectId === p.id && (
-                  <div className="posting-date-picker">
-                    <label htmlFor={`posted-date-${p.id}`}>Posted date</label>
-                    <input id={`posted-date-${p.id}`} type="date" value={postingDate} onChange={(event) => setPostingDate(event.target.value)} />
-                    <button type="button" onClick={() => setPostingDate(todayDate())}>Today</button>
-                    <button type="button" className="confirm-posted" onClick={markPosted}>Post</button>
-                  </div>
-                )}
               </div>
             </div>
           </article>
@@ -369,6 +382,38 @@ export default function App() {
           </div>
         )}
       </div>
+      {postingProjectId !== null && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPostingProjectId(null); }}>
+          <div className="posting-modal" role="dialog" aria-modal="true" aria-labelledby="posting-modal-title">
+            <span className="section-kicker">Post video</span>
+            <h2 id="posting-modal-title">When was this posted?</h2>
+            <button type="button" className="posting-date-display" onClick={() => setPostingCalendarOpen((open) => !open)} aria-expanded={postingCalendarOpen}>
+              <span aria-hidden="true">▣</span>
+              {postedTitle(postingDate)}
+            </button>
+            {postingCalendarOpen && (
+              <div className="posting-calendar calendar-popover">
+                <div className="calendar-header">
+                  <button type="button" onClick={() => setPostingCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1)))} aria-label="Previous month">‹</button>
+                  <strong>{monthLabel(postingCalendarMonth)}</strong>
+                  <button type="button" onClick={() => setPostingCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)))} aria-label="Next month">›</button>
+                </div>
+                <div className="calendar-weekdays">{['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((day) => <span key={day}>{day}</span>)}</div>
+                <div className="calendar-grid">
+                  {calendarDays(postingCalendarMonth).map((day, index) => day ? (
+                    <button type="button" className={day.toISOString().slice(0, 10) === postingDate ? 'selected' : ''} key={day.toISOString()} onClick={() => { setPostingDate(day.toISOString().slice(0, 10)); setPostingCalendarOpen(false); }}>{day.getUTCDate()}</button>
+                  ) : <span className="calendar-empty" key={`posting-empty-${index}`} />)}
+                </div>
+              </div>
+            )}
+            <div className="posting-modal-actions">
+              <button type="button" className="back-button" onClick={() => setPostingProjectId(null)}>Cancel</button>
+              <button type="button" className="back-button today-button" onClick={() => setPostingDate(todayDate())}>Today</button>
+              <button type="button" className="save-button" onClick={markPosted}>Post</button>
+            </div>
+          </div>
+        </div>
+      )}
       {renderDeleteModal()}
     </div>
   );

@@ -1022,12 +1022,14 @@ canvas {
 .miss-button { background: rgba(190, 56, 61, 0.14); border-color: #be383d; color: #ed777b; }
 .posted-button { background: rgba(232, 178, 61, 0.14); border-color: var(--gold); color: var(--gold); }
 .posted-button:disabled { cursor: not-allowed; opacity: 0.55; }
-.posting-date-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; }
-.posting-date-picker label { margin: 0; color: rgba(244, 242, 232, 0.5); font-size: 9px; }
-.posting-date-picker input { width: auto; min-width: 132px; margin: 0; padding: 6px 7px; font-size: 10px; }
-.posting-date-picker button { background: transparent; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 6px; color: var(--gold); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 10px; padding: 6px 8px; text-transform: uppercase; }
-.posting-date-picker button:hover { background: rgba(232, 178, 61, 0.12); }
-.posting-date-picker .confirm-posted { background: var(--gold); color: var(--ink); font-weight: 700; }
+.posting-modal { position: relative; width: min(100%, 430px); background: #10251e; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 14px; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55); padding: 24px; }
+.posting-modal h2 { margin: 6px 0 18px; color: var(--chalk); font-size: 24px; }
+.posting-date-display { display: flex; align-items: center; gap: 8px; width: 100%; height: 42px; padding: 0 11px; background: rgba(10, 18, 16, 0.72); border: 1px solid rgba(232, 178, 61, 0.42); border-radius: 7px; color: var(--chalk); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 13px; text-align: left; text-transform: capitalize; }
+.posting-date-display span { color: var(--gold); font-size: 15px; }
+.posting-date-display:hover { background: rgba(232, 178, 61, 0.16); border-color: var(--gold); color: var(--gold); }
+.posting-calendar { position: absolute; top: 142px; left: 24px; width: 248px; margin-top: 0; }
+.posting-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.today-button { color: var(--gold); border-color: rgba(232, 178, 61, 0.55); }
 .pick-row:hover { background: rgba(232, 178, 61, 0.06); }
 .cancel-pick-edit { background: transparent; border: 1px solid rgba(244, 242, 232, 0.25); border-radius: 6px; color: rgba(244, 242, 232, 0.65); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 0.06em; padding: 5px 8px; text-transform: uppercase; }
 .cancel-pick-edit:hover { border-color: var(--gold); color: var(--gold); }
