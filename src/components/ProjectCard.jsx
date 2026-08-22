@@ -257,7 +257,7 @@ const ProjectCard = forwardRef(function ProjectCard(
           <button type="button" onClick={onDuplicate} title="Duplicate">
             ⧉
           </button>
-          <button type="button" onClick={onRemove} title={project.status === 'posted' ? 'Posted videos cannot be deleted' : 'Remove'} disabled={project.status === 'posted'}>
+          <button type="button" onClick={onRemove} title="Remove">
             ✕
           </button>
         </div>

@@ -59,6 +59,7 @@ export default function App() {
   const [saveNotice, setSaveNotice] = useState('');
   const [postingProjectId, setPostingProjectId] = useState(null);
   const [postingDate, setPostingDate] = useState(todayDate);
+  const [deleteConfirmProjectId, setDeleteConfirmProjectId] = useState(null);
   const [zipping, setZipping] = useState(false);
   const cardRefs = useRef({});
 
@@ -139,7 +140,6 @@ export default function App() {
   }
 
   function removeProject(id) {
-    if (projects.find((project) => project.id === id)?.status === 'posted') return;
     setProjects((prev) => prev.filter((p) => p.id !== id));
     const oldMedia = media[id];
     if (oldMedia?.videoUrl) URL.revokeObjectURL(oldMedia.videoUrl);
@@ -148,6 +148,21 @@ export default function App() {
     setMedia((prev) => { const next = { ...prev }; delete next[id]; return next; });
     deleteMedia(id).catch(() => {});
     delete cardRefs.current[id];
+  }
+
+  function requestDeleteProject(id) {
+    const project = projects.find((currentProject) => currentProject.id === id);
+    if (project?.status === 'posted') {
+      setDeleteConfirmProjectId(id);
+      return;
+    }
+    removeProject(id);
+  }
+
+  function confirmDeleteProject() {
+    if (deleteConfirmProjectId === null) return;
+    removeProject(deleteConfirmProjectId);
+    setDeleteConfirmProjectId(null);
   }
 
   function openPostingDate(id) {
@@ -247,6 +262,23 @@ export default function App() {
     window.setTimeout(() => setSaveNotice(''), 1800);
   }
 
+  function renderDeleteModal() {
+    if (deleteConfirmProjectId === null) return null;
+    return (
+      <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteConfirmProjectId(null); }}>
+        <div className="delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-modal-title">
+          <span className="section-kicker">Posted video</span>
+          <h2 id="delete-modal-title">Delete this posted video?</h2>
+          <p>This video is marked as posted. Deleting it will remove its saved video, image, and project data permanently.</p>
+          <div className="delete-modal-actions">
+            <button type="button" className="back-button" onClick={() => setDeleteConfirmProjectId(null)}>Cancel</button>
+            <button type="button" className="modal-delete-button" onClick={confirmDeleteProject}>Delete anyway</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (activeProject) {
     return (
       <div className="app-wrap editor-wrap">
@@ -264,10 +296,11 @@ export default function App() {
           project={activeProject}
           existingVideoUrl={media[activeProject.id]?.videoUrl}
           onChange={(updated) => updateProject(activeProject.id, updated)}
-          onRemove={() => { removeProject(activeProject.id); setActiveProjectId(null); }}
+          onRemove={() => requestDeleteProject(activeProject.id)}
           onDuplicate={() => duplicateProject(activeProject.id)}
           onVideoReady={handleVideoReady}
         />
+        {renderDeleteModal()}
       </div>
     );
   }
@@ -303,7 +336,7 @@ export default function App() {
       <div className="video-library">
         {projects.map((p) => (
           <article className="video-item" key={p.id}>
-            <button type="button" className="video-item-delete" onClick={() => removeProject(p.id)} aria-label={`Delete ${p.title}`} title={p.status === 'posted' ? 'Posted videos cannot be deleted' : 'Delete video'} disabled={p.status === 'posted'}>×</button>
+            <button type="button" className="video-item-delete" onClick={() => requestDeleteProject(p.id)} aria-label={`Delete ${p.title}`} title="Delete video">×</button>
             <div className="video-thumb">
               {media[p.id]?.resultUrl || media[p.id]?.overviewUrl ? <img src={media[p.id].resultUrl || media[p.id].overviewUrl} alt={`${p.title} ${p.result || 'overview'} result`} /> : <div className="thumb-placeholder">{mediaLoading ? 'Loading…' : media[p.id]?.videoBlob ? 'Generated' : 'Not generated'}</div>}
             </div>
@@ -336,6 +369,7 @@ export default function App() {
           </div>
         )}
       </div>
+      {renderDeleteModal()}
     </div>
   );
 }
