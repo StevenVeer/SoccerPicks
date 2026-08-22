@@ -3,6 +3,7 @@ import ProjectCard from './components/ProjectCard.jsx';
 import { dateStamp, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
 import { PREVIEW_T, renderCanvas } from './lib/canvasRenderer';
+import { archiveProject } from './lib/archive';
 
 let idCounter = 1;
 const PROJECTS_STORAGE_KEY = 'soccer-picks-projects';
@@ -48,6 +49,7 @@ function defaultProjects() {
   return [
     {
       id: idCounter,
+      clientId: crypto.randomUUID(),
       title: 'Matchday Picks',
       handle: 'soccer_picks_144',
       disclaimer: '18+ · Bet responsibly',
@@ -66,7 +68,10 @@ export default function App() {
           let projectId = Number(project.id) || 0;
           while (!projectId || usedIds.has(projectId)) projectId += 1;
           usedIds.add(projectId);
-          return project.id === projectId ? project : { ...project, id: projectId };
+          const clientId = project.clientId || crypto.randomUUID();
+          return project.id === projectId && project.clientId === clientId
+            ? project
+            : { ...project, id: projectId, clientId };
         });
         idCounter = projectsWithUniqueIds.reduce((maxId, project) => Math.max(maxId, Number(project.id) || 0), 1);
         return projectsWithUniqueIds;
@@ -141,6 +146,7 @@ export default function App() {
         ...prev,
         {
           id: idCounter,
+          clientId: crypto.randomUUID(),
           title: `Video ${prev.length + 1}`,
           handle: 'soccer_picks_144',
           disclaimer: last ? last.disclaimer : '18+ · Bet responsibly',
@@ -161,6 +167,7 @@ export default function App() {
         {
           ...source,
           id: newId,
+          clientId: crypto.randomUUID(),
           title: `${source.title} (copy)`,
           picks: source.picks.map((p) => ({ ...p })),
         },
@@ -218,6 +225,8 @@ export default function App() {
     setMedia((prev) => ({ ...prev, [id]: nextMedia }));
     saveMedia(id, { videoBlob: blob, overviewBlob, resultBlob: oldMedia?.resultBlob, result: oldMedia?.result }).catch(() => {});
     setGeneratingIds((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    const project = projects.find((currentProject) => currentProject.id === id);
+    if (project) archiveProject(project, { videoBlob: blob, overviewBlob });
   }
 
   function startBackgroundGeneration(id) {
@@ -301,6 +310,7 @@ export default function App() {
 
   function saveProjects() {
     localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+    if (activeProject) archiveProject(activeProject, media[activeProject.id]);
     setSaveNotice('Saved');
     window.setTimeout(() => setSaveNotice(''), 1800);
   }

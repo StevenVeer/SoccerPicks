@@ -6,16 +6,33 @@ Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds); de odds z
 
 Je kunt meerdere video's tegelijk beheren — elk met eigen picks — en ze allemaal in één keer genereren en als zip downloaden.
 
-## Starten
+Naast de lokale opslag (localStorage + IndexedDB, altijd leidend) houdt de app ook een permanent archief bij in een zelf-gehoste Postgres-database, bediend door een eigen API-server — geen Supabase of andere externe dienst.
+
+## Starten (Docker, aanbevolen)
+
+```bash
+cp .env.example .env
+# vul POSTGRES_PASSWORD en ODDS_API_KEY in .env in
+docker compose up --build
+```
+
+Open daarna `http://localhost:8080`.
+
+## Starten (lokale ontwikkeling zonder Docker)
+
+Vereist een lokaal draaiende Postgres-instantie met het `posted_videos`/`video_picks`-schema.
 
 ```bash
 npm install
-npm run dev
+npm run dev            # frontend, http://localhost:5173
+
+cd server
+npm install
+# .env met DATABASE_URL, ODDS_API_KEY en eventueel VIDEO_DIR
+node index.js           # API, http://localhost:3001
 ```
 
-Open daarna de URL die Vite toont (meestal `http://localhost:5173`).
-
-Voor een productie-build:
+Voor een productie-build van alleen de frontend:
 
 ```bash
 npm run build
@@ -46,8 +63,10 @@ src/
     timeline.js               – animatietiming (intro, picks, parlay-reveal, outro)
     utils.js                   – kleine hulpfuncties (clamp, slugify, rounded rects, ...)
     pickTemplates.js          – vaste lijst van 14 standaard weddenschap-types per wedstrijd
+    archive.js                 – stuurt project + media naar de eigen archief-API (faalt stil)
 server/
-  oddsApi.js                – Vite dev-middleware die wedstrijden ophaalt via The Odds API `/events`
+  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`) en archief (`/api/archive`)
+  db.js                        – Postgres-connectiepool
 ```
 
 Werkt het soepelst in Chrome (breedste ondersteuning voor `canvas.captureStream`).

@@ -231,6 +231,7 @@ const ProjectCard = forwardRef(function ProjectCard(
     setError('');
     setStatus('recording');
     setProgress(0);
+    const canvasEl = canvasRef.current;
     if (onGenerationStart) onGenerationStart(project.id);
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
@@ -239,7 +240,7 @@ const ProjectCard = forwardRef(function ProjectCard(
 
     try {
       const blob = await recordCanvasVideo(
-        canvasRef.current,
+        canvasEl,
         project,
         timeline,
         renderCanvas,
@@ -248,8 +249,8 @@ const ProjectCard = forwardRef(function ProjectCard(
       const url = URL.createObjectURL(blob);
       setVideoUrl(url);
       setStatus('done');
-      renderCanvas(canvasRef.current.getContext('2d'), PREVIEW_T, project);
-      const overviewBlob = await new Promise((resolve) => canvasRef.current.toBlob(resolve, 'image/png'));
+      renderCanvas(canvasEl.getContext('2d'), PREVIEW_T, project);
+      const overviewBlob = await new Promise((resolve) => canvasEl.toBlob(resolve, 'image/png'));
       if (onVideoReady) onVideoReady(project.id, blob, url, overviewBlob);
       return blob;
     } catch (err) {
