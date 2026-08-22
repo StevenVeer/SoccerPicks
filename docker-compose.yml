@@ -23,7 +23,7 @@ services:
   web:
     build: .
     ports:
-      - "8080:80"
+      - "6060:80"
     depends_on:
       - api
     restart: unless-stopped

@@ -16,7 +16,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open daarna `http://localhost:8080`.
+Open daarna `http://localhost:6060`.
 
 ## Starten (lokale ontwikkeling zonder Docker)
 
