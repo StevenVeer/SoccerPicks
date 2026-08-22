@@ -61,8 +61,15 @@ export default function App() {
     try {
       const stored = JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY));
       if (Array.isArray(stored)) {
-        idCounter = stored.reduce((maxId, project) => Math.max(maxId, Number(project.id) || 0), 1);
-        return stored;
+        const usedIds = new Set();
+        const projectsWithUniqueIds = stored.map((project) => {
+          let projectId = Number(project.id) || 0;
+          while (!projectId || usedIds.has(projectId)) projectId += 1;
+          usedIds.add(projectId);
+          return project.id === projectId ? project : { ...project, id: projectId };
+        });
+        idCounter = projectsWithUniqueIds.reduce((maxId, project) => Math.max(maxId, Number(project.id) || 0), 1);
+        return projectsWithUniqueIds;
       }
     } catch {
       // Fall back to a clean project when saved data is invalid.
