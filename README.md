@@ -18,6 +18,17 @@ docker compose up --build
 
 Open daarna `http://localhost:6060`.
 
+### Automatisch bijwerken bij nieuwe commits
+
+Laat `scripts/autodeploy.sh` in een aparte terminal draaien om de lokale containers automatisch te herbouwen zodra er een nieuwe commit op `origin/master` staat:
+
+```bash
+./scripts/autodeploy.sh            # controleert elke 30s
+POLL_INTERVAL=60 ./scripts/autodeploy.sh   # ander interval
+```
+
+Het script doet `git fetch`, en bij verschil: `git merge --ff-only`, `docker compose build` en `docker compose up -d`. Stoppen met Ctrl+C.
+
 ## Starten (lokale ontwikkeling zonder Docker)
 
 Vereist een lokaal draaiende Postgres-instantie met het `posted_videos`/`video_picks`-schema.
