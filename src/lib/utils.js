@@ -65,3 +65,23 @@ Follow for daily football predictions & value bets 📈
 
 #football #footballtips #footballpredictions #bettingtips #soccer #soccerbets #valuebets #footballbetting #bettingpicks #sportsbetting`;
 }
+
+const RESULT_HASHTAGS = '#football #footballtips #footballpredictions #bettingtips #soccer #soccerbets #valuebets #footballbetting #bettingpicks #sportsbetting';
+
+export function getResultDescription(result) {
+  if (result === 'hit') {
+    return `⚽️ WINNER ✅👀
+Follow for daily football predictions & value bets 📈
+Next pick drops soon 👇
+
+${RESULT_HASHTAGS}`;
+  }
+  if (result === 'miss') {
+    return `⚽️ Misser ❌ Not every pick hits
+That's sports betting — stay consistent, stay disciplined 📈
+Follow for daily picks, wins and losses included 👇
+
+${RESULT_HASHTAGS}`;
+  }
+  return '';
+}
