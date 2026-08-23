@@ -3,7 +3,10 @@ const PICK_STEP = 650;
 const PICK_ANIM = 450;
 const START_HOLD = 100;
 const ANIMATION_SPEED = 2;
-const MIN_VIDEO_DUR = 8000;
+// WebM containers from MediaRecorder report duration as the last frame's
+// timestamp, not the actual recording length, so stopping at exactly 8000ms
+// yields files that read back as slightly under 8s. Buffer past it.
+const MIN_VIDEO_DUR = 8300;
 
 export function timeline(pickCount) {
   const picksEnd = INTRO_DUR + Math.max(0, pickCount - 1) * PICK_STEP + PICK_ANIM;
