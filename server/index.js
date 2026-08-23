@@ -52,9 +52,9 @@ function normalizeMatch(event, league) {
   };
 }
 
-// TheSportsDB's shared "3" test key works without any signup, at low volume —
+// TheSportsDB's shared "123" free key works without any signup, at low volume —
 // fine for a personal, single-user tool like this one.
-const SPORTSDB_API_KEY = process.env.SPORTSDB_API_KEY || '3';
+const SPORTSDB_API_KEY = process.env.SPORTSDB_API_KEY || '123';
 const crestCache = new Map();
 const CREST_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
 const CREST_NOT_FOUND = Symbol('crest-not-found');
