@@ -1,4 +1,4 @@
-import { clamp, ease, truncate, truncateToWidth, roundRectPath } from './utils';
+import { clamp, ease, truncateToWidth, roundRectPath } from './utils';
 import { timeline } from './timeline';
 import { getCachedCrest, splitMatchTeams } from './teamCrests';
 
@@ -168,7 +168,8 @@ function drawPickRow(c, pick, rowY, rowH, W, progress, missed) {
 
   c.fillStyle = missed ? 'rgba(232,178,61,0.5)' : '#E8B23D';
   c.font = '400 32px Oswald';
-  c.fillText(truncate(pick.pick, 28), paddingX, pickY);
+  const pickMaxWidth = badgeX - paddingX - 10;
+  c.fillText(truncateToWidth(c, pick.pick, pickMaxWidth), paddingX, pickY);
 
   const badgeH = 64;
   const badgeY = rowY + rowH / 2 - badgeH / 2;
