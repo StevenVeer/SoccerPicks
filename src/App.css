@@ -51,18 +51,6 @@ h1 {
   line-height: 1.5;
 }
 
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 32px;
-}
-.toolbar button {
-  width: auto;
-  padding: 12px 20px;
-}
-
 button.primary {
   background: var(--gold);
   color: var(--ink);
@@ -1052,6 +1040,25 @@ canvas {
 
 .dashboard-top { text-align: left; margin-bottom: 24px; }
 .dashboard-top .sub, .editor-top .sub { margin-left: 0; text-align: left; }
+.dashboard-top-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+button.primary.new-video-btn {
+  width: auto;
+  padding: 10px 16px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .dashboard-top-row {
+    align-items: flex-start;
+  }
+}
 .editor-wrap { max-width: 1400px; }
 .editor-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .editor-top { margin-bottom: 24px; }
