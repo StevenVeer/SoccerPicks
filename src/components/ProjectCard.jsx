@@ -221,7 +221,12 @@ const ProjectCard = forwardRef(function ProjectCard(
     setError('');
     setStatus('recording');
     setProgress(0);
-    const canvasEl = canvasRef.current;
+    // Record onto our own detached canvas rather than canvasRef.current:
+    // onGenerationStart() navigates back to the dashboard, unmounting this
+    // card (and its <canvas>), while recording keeps running in the background.
+    const canvasEl = document.createElement('canvas');
+    canvasEl.width = 1080;
+    canvasEl.height = 1920;
     if (onGenerationStart) onGenerationStart(project.id);
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
