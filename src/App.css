@@ -1099,6 +1099,9 @@ button.primary.new-video-btn {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.dashboard-top-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.settings-btn { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; background: transparent; border: 1px solid rgba(244, 242, 232, 0.25); border-radius: 9px; color: var(--chalk); cursor: pointer; }
+.settings-btn:hover { border-color: var(--gold); color: var(--gold); }
 @media (max-width: 640px) {
   .dashboard-top-row {
     align-items: flex-start;
@@ -1174,6 +1177,9 @@ button.primary.new-video-btn {
 .posting-date-display:hover { background: rgba(232, 178, 61, 0.16); border-color: var(--gold); color: var(--gold); }
 .posting-calendar { position: absolute; top: 142px; left: 24px; width: 248px; margin-top: 0; }
 .posting-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.settings-modal { width: min(100%, 430px); background: #10251e; border: 1px solid rgba(232, 178, 61, 0.55); border-radius: 14px; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55); padding: 24px; }
+.settings-modal h2 { margin: 6px 0 8px; color: var(--chalk); font-size: 24px; }
+.settings-modal p { margin: 0 0 18px; color: rgba(244, 242, 232, 0.62); font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.6; }
 .today-button { color: var(--gold); border-color: rgba(232, 178, 61, 0.55); }
 .pick-row:hover { background: rgba(232, 178, 61, 0.06); }
 .cancel-pick-edit { background: transparent; border: 1px solid rgba(244, 242, 232, 0.25); border-radius: 6px; color: rgba(244, 242, 232, 0.65); cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 0.06em; padding: 5px 8px; text-transform: uppercase; }
