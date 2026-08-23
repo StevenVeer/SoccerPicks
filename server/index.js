@@ -62,15 +62,21 @@ const CREST_NOT_FOUND = Symbol('crest-not-found');
 async function fetchCrest(teamName) {
   const searchUrl = `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/searchteams.php?t=${encodeURIComponent(teamName)}`;
   const searchResponse = await fetch(searchUrl);
-  if (!searchResponse.ok) throw new Error(`TheSportsDB search failed (${searchResponse.status})`);
+  if (!searchResponse.ok) {
+    const body = await searchResponse.text().catch(() => '');
+    throw new Error(`TheSportsDB search failed (${searchResponse.status}): ${body.slice(0, 200)}`);
+  }
   const searchData = await searchResponse.json();
   const teams = searchData.teams || [];
   const team = teams.find((t) => t.strSport === 'Soccer') || teams[0];
   const badgeUrl = team?.strTeamBadge;
-  if (!badgeUrl) return null;
+  if (!badgeUrl) {
+    console.warn(`[crest] no team/badge found for "${teamName}" (${teams.length} results)`);
+    return null;
+  }
 
   const imageResponse = await fetch(badgeUrl);
-  if (!imageResponse.ok) throw new Error(`Crest image fetch failed (${imageResponse.status})`);
+  if (!imageResponse.ok) throw new Error(`Crest image fetch failed (${imageResponse.status}) for ${badgeUrl}`);
   const contentType = imageResponse.headers.get('content-type') || 'image/png';
   const buffer = Buffer.from(await imageResponse.arrayBuffer());
   return { buffer, contentType };
@@ -108,6 +114,7 @@ app.get('/api/teams/crest', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=86400');
     res.send(crest.buffer);
   } catch (error) {
+    console.error(`[crest] lookup failed for "${name}": ${error.message}`);
     res.status(502).json({ error: error.message });
   }
 });
