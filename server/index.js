@@ -69,7 +69,7 @@ async function fetchCrest(teamName) {
   const searchData = await searchResponse.json();
   const teams = searchData.teams || [];
   const team = teams.find((t) => t.strSport === 'Soccer') || teams[0];
-  const badgeUrl = team?.strTeamBadge;
+  const badgeUrl = team?.strBadge;
   if (!badgeUrl) {
     console.warn(`[crest] no team/badge found for "${teamName}" (${teams.length} results)`);
     return null;
