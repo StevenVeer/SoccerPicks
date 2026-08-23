@@ -428,7 +428,6 @@ const ProjectCard = forwardRef(function ProjectCard(
                 {descriptionCopied ? 'Copied' : 'Copy'}
               </button>
             </div>
-            <div className="description-text">{getDescription(project.picks.length)}</div>
           </div>
         </div>
 
