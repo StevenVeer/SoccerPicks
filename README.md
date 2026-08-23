@@ -13,21 +13,10 @@ Naast de lokale opslag (localStorage + IndexedDB, altijd leidend) houdt de app o
 ```bash
 cp .env.example .env
 # vul POSTGRES_PASSWORD en ODDS_API_KEY in .env in
-docker compose up --build
+docker compose up -d --build
 ```
 
-Open daarna `http://localhost:6060`.
-
-### Automatisch bijwerken bij nieuwe commits
-
-Laat `scripts/autodeploy.sh` in een aparte terminal draaien om de lokale containers automatisch te herbouwen zodra er een nieuwe commit op `origin/master` staat:
-
-```bash
-./scripts/autodeploy.sh            # controleert elke 30s
-POLL_INTERVAL=60 ./scripts/autodeploy.sh   # ander interval
-```
-
-Het script doet `git fetch`, en bij verschil: `git merge --ff-only`, `docker compose build` en `docker compose up -d`. Stoppen met Ctrl+C.
+Open daarna `http://localhost:6060`. Na een `git pull` van nieuwe wijzigingen: herhaal dezelfde `docker compose up -d --build` om de containers herbouwd en herstart te krijgen.
 
 ## Starten (lokale ontwikkeling zonder Docker)
 
