@@ -78,6 +78,7 @@ function defaultProjects() {
       handle: 'soccer_picks_144',
       disclaimer: '18+ · Bet responsibly',
       picks: [],
+      createdAt: new Date().toISOString(),
     },
   ];
 }
@@ -195,6 +196,7 @@ export default function App() {
           handle: 'soccer_picks_144',
           disclaimer: last ? last.disclaimer : '18+ · Bet responsibly',
           picks: [],
+          createdAt: new Date().toISOString(),
         },
       ];
     });
@@ -216,6 +218,7 @@ export default function App() {
           clientId: crypto.randomUUID(),
           title: `${source.title} (copy)`,
           picks: source.picks.map((p) => ({ ...p })),
+          createdAt: new Date().toISOString(),
         },
       ];
     });
@@ -440,7 +443,10 @@ export default function App() {
         <div><b>{readyCount}</b><span>Generated</span></div>
       </div>
       <div className="video-library">
-        {[...projects].sort((a, b) => (b.postedDate || '').localeCompare(a.postedDate || '')).map((p) => (
+        {[...projects].sort((a, b) => (
+          (b.postedDate || '').localeCompare(a.postedDate || '') ||
+          (b.createdAt || '').localeCompare(a.createdAt || '')
+        )).map((p) => (
           <article className="video-item" key={p.id}>
             <button type="button" className="video-item-delete" onClick={() => requestDeleteProject(p.id)} aria-label={`Delete ${p.title}`} title="Delete video">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
