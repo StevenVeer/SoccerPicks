@@ -38,7 +38,8 @@ export function loadCrest(teamName) {
       cache.set(key, img);
       return img;
     })
-    .catch(() => {
+    .catch((err) => {
+      console.warn(`[teamCrests] no crest for "${key}": ${err.message}`);
       cache.set(key, null);
       return null;
     })

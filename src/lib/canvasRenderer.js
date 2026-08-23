@@ -98,8 +98,8 @@ function drawMatchLine(c, match, x, baselineY, maxWidth, missed) {
 
   const nameFont = c.font;
   const vsFont = '500 26px Oswald';
-  const iconSize = 38;
-  const iconGap = 10;
+  const iconSize = 46;
+  const iconGap = 11;
   const segGap = 14;
 
   c.font = vsFont;
@@ -114,7 +114,7 @@ function drawMatchLine(c, match, x, baselineY, maxWidth, missed) {
 
   const homeText = truncateToWidth(c, home, homeBudget);
   const awayText = truncateToWidth(c, away, awayBudget);
-  const iconY = baselineY - iconSize + 10;
+  const iconY = baselineY - iconSize + 2;
 
   let cursorX = x;
   if (homeCrest) {
