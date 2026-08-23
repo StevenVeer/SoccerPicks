@@ -344,7 +344,14 @@ export default function App() {
     await Promise.allSettled(projects.map((p) => cardRefs.current[p.id]?.generate()));
   }
 
-  const readyCount = projects.filter((p) => media[p.id]?.videoBlob).length;
+  const unitsProfit = projects.reduce((total, p) => {
+    if (p.result === 'hit') {
+      const combinedOdds = p.picks.reduce((acc, pick) => acc * pick.odds, 1);
+      return total + (combinedOdds - 1);
+    }
+    if (p.result === 'miss') return total - 1;
+    return total;
+  }, 0);
   const activeProject = projects.find((project) => project.id === activeProjectId);
   const videoModalProject = projects.find((project) => project.id === videoModalProjectId);
 
@@ -482,7 +489,7 @@ export default function App() {
         <div><b>{projects.length}</b><span>Total videos</span></div>
         <div><b>{projects.filter((p) => p.result === 'hit').length}</b><span>Hits</span></div>
         <div><b>{projects.filter((p) => p.result === 'miss').length}</b><span>Misses</span></div>
-        <div><b>{readyCount}</b><span>Generated</span></div>
+        <div><b>{unitsProfit.toFixed(2)}u</b><span>Units profit</span></div>
       </div>
       <div className="video-library">
         {[...projects].sort((a, b) => {
