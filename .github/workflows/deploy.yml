@@ -1,0 +1,27 @@
+name: Deploy to Docker (self-hosted PC)
+
+# Runs on the self-hosted runner installed on the PC that hosts the
+# `docker compose` stack. Triggers whenever master moves (i.e. right
+# after a PR is merged), and can also be run manually from the Actions
+# tab. It operates on the *existing* checkout at vars.DEPLOY_PATH rather
+# than a fresh clone, so it reuses the local .env file and keeps using
+# the same docker compose project (same containers/volumes).
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Sync working copy to origin/master
+        working-directory: ${{ vars.DEPLOY_PATH }}
+        run: |
+          git fetch origin master
+          git checkout master
+          git reset --hard origin/master
+
+      - name: Rebuild and restart containers
+        working-directory: ${{ vars.DEPLOY_PATH }}
+        run: docker compose up -d --build
