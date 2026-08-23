@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ProjectCard from './components/ProjectCard.jsx';
 import { dateStamp, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
-import { PREVIEW_T, renderCanvas } from './lib/canvasRenderer';
+import { PREVIEW_T, renderCanvas, drawWinnerStamp } from './lib/canvasRenderer';
 import { archiveProject, deleteArchivedProject } from './lib/archive';
 
 let idCounter = 1;
@@ -264,17 +264,21 @@ export default function App() {
     canvas.height = 1920;
     renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
     const context = canvas.getContext('2d');
-    context.save();
-    context.translate(540, 960);
-    context.rotate(-Math.atan2(1920, 1080));
-    context.fillStyle = result === 'hit' ? 'rgba(37, 156, 91, 0.88)' : 'rgba(190, 56, 61, 0.88)';
-    context.fillRect(-1000, -90, 2000, 180);
-    context.fillStyle = '#F4F2E8';
-    context.font = '700 92px Oswald';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText(result.toUpperCase(), 0, 0);
-    context.restore();
+    if (result === 'hit') {
+      drawWinnerStamp(context, canvas.width);
+    } else {
+      context.save();
+      context.translate(540, 960);
+      context.rotate(-Math.atan2(1920, 1080));
+      context.fillStyle = 'rgba(190, 56, 61, 0.88)';
+      context.fillRect(-1000, -90, 2000, 180);
+      context.fillStyle = '#F4F2E8';
+      context.font = '700 92px Oswald';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText('MISS', 0, 0);
+      context.restore();
+    }
     const resultBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!resultBlob) return;
     const oldMedia = media[id];

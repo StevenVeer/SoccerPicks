@@ -190,6 +190,72 @@ function drawFooter(c, H, W, project, progress) {
   c.restore();
 }
 
+// Stamps a tilted "WINNER" seal over the top-right corner of a rendered frame.
+export function drawWinnerStamp(c, W) {
+  const cx = W * 0.72;
+  const cy = W * 0.305;
+  const r = W * 0.213;
+
+  c.save();
+  c.translate(cx, cy);
+  c.rotate((-11 * Math.PI) / 180);
+
+  c.beginPath();
+  c.arc(0, 0, r + 4, 0, Math.PI * 2);
+  c.strokeStyle = 'rgba(232,178,61,0.18)';
+  c.lineWidth = 8;
+  c.stroke();
+
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.35)';
+  c.shadowBlur = 24;
+  c.shadowOffsetY = 10;
+  c.beginPath();
+  c.arc(0, 0, r, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(8,40,32,0.94)';
+  c.fill();
+  c.restore();
+
+  c.beginPath();
+  c.arc(0, 0, r, 0, Math.PI * 2);
+  c.lineWidth = 6;
+  c.strokeStyle = '#E8B23D';
+  c.stroke();
+
+  c.beginPath();
+  c.arc(0, 0, r - 18, 0, Math.PI * 2);
+  c.lineWidth = 2;
+  c.strokeStyle = 'rgba(232,178,61,0.45)';
+  c.stroke();
+
+  const tickR = r * 0.26;
+  const tickCy = -r * 0.3;
+  c.beginPath();
+  c.arc(0, tickCy, tickR, 0, Math.PI * 2);
+  c.fillStyle = '#E8B23D';
+  c.fill();
+
+  c.beginPath();
+  c.moveTo(-tickR * 0.5, tickCy);
+  c.lineTo(-tickR * 0.1, tickCy + tickR * 0.42);
+  c.lineTo(tickR * 0.55, tickCy - tickR * 0.42);
+  c.strokeStyle = '#082820';
+  c.lineWidth = tickR * 0.24;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.stroke();
+
+  c.fillStyle = '#F4F2E8';
+  c.font = `700 ${r * 0.36}px Oswald`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  if ('letterSpacing' in c) c.letterSpacing = `${r * 0.02}px`;
+  c.fillText('WINNER', 0, r * 0.32);
+  if ('letterSpacing' in c) c.letterSpacing = '0px';
+
+  c.restore();
+}
+
 // Draws one frame of a project's ticket video at time t (ms).
 // Called repeatedly during recording, and once with a large t for a static preview.
 export function renderCanvas(ctx, t, project) {
