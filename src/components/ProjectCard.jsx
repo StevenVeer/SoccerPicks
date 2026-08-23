@@ -7,9 +7,13 @@ import { preloadCrestsForPicks } from '../lib/teamCrests';
 import MatchPicker from './MatchPicker.jsx';
 
 const ProjectCard = forwardRef(function ProjectCard(
-  { project, existingVideoUrl, onChange, onRemove, onDuplicate, onGenerationStart, onGenerationEnd, onVideoReady },
+  { project, settings, existingVideoUrl, onChange, onRemove, onDuplicate, onGenerationStart, onGenerationEnd, onVideoReady },
   ref
 ) {
+  // The account name and footer disclaimer are account-wide settings, not
+  // per-video fields, so they're merged in here rather than stored on project.
+  const renderProject = { ...project, handle: settings.accountName, disclaimer: settings.disclaimer };
+
   const canvasRef = useRef(null);
   const previewFrameRef = useRef(null);
   const [homeTeamInput, setHomeTeamInput] = useState('');
@@ -32,24 +36,25 @@ const ProjectCard = forwardRef(function ProjectCard(
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || status === 'recording' || isPreviewing) return;
-    renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
+    renderCanvas(canvas.getContext('2d'), PREVIEW_T, renderProject);
     let cancelled = false;
     preloadCrestsForPicks(project.picks).then(() => {
       if (cancelled) return;
       const currentCanvas = canvasRef.current;
-      if (currentCanvas) renderCanvas(currentCanvas.getContext('2d'), PREVIEW_T, project);
+      if (currentCanvas) renderCanvas(currentCanvas.getContext('2d'), PREVIEW_T, renderProject);
     });
     return () => {
       cancelled = true;
     };
-  }, [project, status, isPreviewing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, settings, status, isPreviewing]);
 
   // Redraw once web fonts are actually loaded (first paint can happen before that).
   useEffect(() => {
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => {
         const canvas = canvasRef.current;
-        if (canvas) renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
+        if (canvas) renderCanvas(canvas.getContext('2d'), PREVIEW_T, renderProject);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -213,7 +218,7 @@ const ProjectCard = forwardRef(function ProjectCard(
 
     function frame(now) {
       const elapsed = now - start;
-      renderCanvas(ctx, elapsed, project);
+      renderCanvas(ctx, elapsed, renderProject);
       if (elapsed < total) {
         previewFrameRef.current = requestAnimationFrame(frame);
       } else {
@@ -249,7 +254,7 @@ const ProjectCard = forwardRef(function ProjectCard(
       await preloadCrestsForPicks(project.picks);
       const blob = await recordCanvasVideo(
         canvasEl,
-        project,
+        renderProject,
         timeline,
         renderCanvas,
         (p) => setProgress(p)
@@ -257,7 +262,7 @@ const ProjectCard = forwardRef(function ProjectCard(
       const url = URL.createObjectURL(blob);
       setVideoUrl(url);
       setStatus('done');
-      renderCanvas(canvasEl.getContext('2d'), PREVIEW_T, project);
+      renderCanvas(canvasEl.getContext('2d'), PREVIEW_T, renderProject);
       const overviewBlob = await new Promise((resolve) => canvasEl.toBlob(resolve, 'image/png'));
       if (onVideoReady) onVideoReady(project.id, blob, url, overviewBlob);
       return blob;
@@ -296,24 +301,6 @@ const ProjectCard = forwardRef(function ProjectCard(
 
       <div className="project-body">
         <div className="project-form">
-          <label htmlFor={`handle-${project.id}`}>Account name</label>
-          <div className="account-field">
-            <div className="profile-avatar" aria-hidden="true">⚽</div>
-            <input
-              id={`handle-${project.id}`}
-              type="text"
-              value="soccer_picks_144"
-              readOnly
-            />
-          </div>
-          <label htmlFor={`disclaimer-${project.id}`}>Footer disclaimer</label>
-          <input
-            id={`disclaimer-${project.id}`}
-            type="text"
-            value={project.disclaimer}
-            onChange={(e) => updateField('disclaimer', e.target.value)}
-          />
-
           <MatchPicker picks={project.picks} onAddPick={addLivePick} disabled={project.picks.length >= 8} />
 
           <form onSubmit={addPick} className="pick-form">

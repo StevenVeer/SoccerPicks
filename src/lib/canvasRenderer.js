@@ -58,7 +58,7 @@ function drawHeader(c, W, project, progress) {
   drawProfileAvatar(c, W / 2 - 150, 257, 20);
   c.fillStyle = '#E8B23D';
   c.font = '600 30px Oswald';
-  c.fillText('@SOCCER_PICKS_144', W / 2 + 20, 270);
+  c.fillText(`@${(project.handle || 'soccer_picks_144').toUpperCase()}`, W / 2 + 20, 270);
 
   c.fillStyle = '#E8B23D';
   c.fillRect(W / 2 - 80, 310, 160, 6);

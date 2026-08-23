@@ -8,6 +8,8 @@ import { archiveProject, deleteArchivedProject } from './lib/archive';
 
 let idCounter = 1;
 const PROJECTS_STORAGE_KEY = 'soccer-picks-projects';
+const SETTINGS_STORAGE_KEY = 'soccer-picks-settings';
+const DEFAULT_SETTINGS = { accountName: 'soccer_picks_144', disclaimer: '18+ · Bet responsibly' };
 
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -66,8 +68,6 @@ function defaultProjects() {
       id: idCounter,
       clientId: crypto.randomUUID(),
       title: 'Matchday Picks',
-      handle: 'soccer_picks_144',
-      disclaimer: '18+ · Bet responsibly',
       picks: [],
       createdAt: new Date().toISOString(),
     },
@@ -102,6 +102,16 @@ export default function App() {
     }
     return defaultProjects();
   });
+  const [settings, setSettings] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY));
+      if (stored && typeof stored === 'object') return { ...DEFAULT_SETTINGS, ...stored };
+    } catch {
+      // Fall back to defaults when saved settings are invalid.
+    }
+    return DEFAULT_SETTINGS;
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [media, setMedia] = useState({});
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [draftProjectId, setDraftProjectId] = useState(null);
@@ -136,6 +146,17 @@ export default function App() {
   }, [projects]);
 
   useEffect(() => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  }, [settings]);
+
+  // Applies the account-wide settings (name, footer disclaimer) to a project
+  // for rendering/archiving, so every video stays in sync with a single source
+  // instead of storing its own copy.
+  function withAccountSettings(project) {
+    return { ...project, handle: settings.accountName, disclaimer: settings.disclaimer };
+  }
+
+  useEffect(() => {
     getAllMedia().then(async (storedMedia) => {
       const hydrated = {};
       for (const item of storedMedia) {
@@ -143,11 +164,11 @@ export default function App() {
         let resultBlob = item.resultBlob;
         const project = projects.find((currentProject) => currentProject.id === item.id);
         if (!overviewBlob && item.videoBlob && project) {
-          overviewBlob = await createOverviewBlob(project);
+          overviewBlob = await createOverviewBlob(withAccountSettings(project));
           if (overviewBlob) saveMedia(item.id, { ...item, overviewBlob }).catch(() => {});
         }
         if (item.result === 'hit' && project) {
-          const restamped = await generateResultBlob(project, 'hit');
+          const restamped = await generateResultBlob(withAccountSettings(project), 'hit');
           if (restamped) {
             resultBlob = restamped;
             saveMedia(item.id, { ...item, overviewBlob, resultBlob }).catch(() => {});
@@ -184,15 +205,12 @@ export default function App() {
     idCounter += 1;
     const newId = idCounter;
     setProjects((prev) => {
-      const last = prev[prev.length - 1];
       return [
         ...prev,
         {
           id: newId,
           clientId: crypto.randomUUID(),
           title: `Video ${prev.length + 1}`,
-          handle: 'soccer_picks_144',
-          disclaimer: last ? last.disclaimer : '18+ · Bet responsibly',
           picks: [],
           createdAt: new Date().toISOString(),
         },
@@ -276,7 +294,7 @@ export default function App() {
     saveMedia(id, { videoBlob: blob, overviewBlob, resultBlob: oldMedia?.resultBlob, result: oldMedia?.result }).catch(() => {});
     setGeneratingIds((prev) => { const next = { ...prev }; delete next[id]; return next; });
     const project = projects.find((currentProject) => currentProject.id === id);
-    if (project) archiveProject(project, { videoBlob: blob, overviewBlob });
+    if (project) archiveProject(withAccountSettings(project), { videoBlob: blob, overviewBlob });
   }
 
   function startBackgroundGeneration(id) {
@@ -291,7 +309,7 @@ export default function App() {
   async function markResult(id, result, missedPickIndexes = []) {
     const project = projects.find((currentProject) => currentProject.id === id);
     if (!project) return;
-    const resultBlob = await generateResultBlob(project, result, missedPickIndexes);
+    const resultBlob = await generateResultBlob(withAccountSettings(project), result, missedPickIndexes);
     if (!resultBlob) return;
     const oldMedia = media[id];
     if (oldMedia?.resultUrl) URL.revokeObjectURL(oldMedia.resultUrl);
@@ -371,7 +389,7 @@ export default function App() {
 
   function saveProjects() {
     localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
-    if (activeProject) archiveProject(activeProject, media[activeProject.id]);
+    if (activeProject) archiveProject(withAccountSettings(activeProject), media[activeProject.id]);
     setDraftProjectId((prev) => (prev === activeProjectId ? null : prev));
     setSaveNotice('Saved');
     window.setTimeout(() => setSaveNotice(''), 1800);
@@ -446,6 +464,39 @@ export default function App() {
     );
   }
 
+  function renderSettingsModal() {
+    if (!settingsOpen) return null;
+    return (
+      <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false); }}>
+        <div className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+          <span className="section-kicker">Account settings</span>
+          <h2 id="settings-modal-title">Account &amp; footer</h2>
+          <p>Used the same way across every video, so you only set it once.</p>
+          <label htmlFor="settings-account-name">Account name</label>
+          <div className="account-field">
+            <div className="profile-avatar" aria-hidden="true">⚽</div>
+            <input
+              id="settings-account-name"
+              type="text"
+              value={settings.accountName}
+              onChange={(e) => setSettings((prev) => ({ ...prev, accountName: e.target.value }))}
+            />
+          </div>
+          <label htmlFor="settings-disclaimer">Footer disclaimer</label>
+          <input
+            id="settings-disclaimer"
+            type="text"
+            value={settings.disclaimer}
+            onChange={(e) => setSettings((prev) => ({ ...prev, disclaimer: e.target.value }))}
+          />
+          <div className="posting-modal-actions">
+            <button type="button" className="save-button" onClick={() => setSettingsOpen(false)}>Done</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function openVideoModal(id) {
     setVideoModalProjectId(id);
     setVideoPlaying(false);
@@ -471,6 +522,7 @@ export default function App() {
         <ProjectCard
           ref={(el) => { cardRefs.current[activeProject.id] = el; }}
           project={activeProject}
+          settings={settings}
           existingVideoUrl={media[activeProject.id]?.videoUrl}
           onChange={(updated) => updateProject(activeProject.id, updated)}
           onRemove={() => requestDeleteProject(activeProject.id)}
@@ -493,9 +545,17 @@ export default function App() {
             <h1>⚽ Soccer Picks Studio</h1>
             <p className="sub">Your generated picks, ready to review.</p>
           </div>
-          <button type="button" className="primary new-video-btn" onClick={addProject}>
-            + New video
-          </button>
+          <div className="dashboard-top-actions">
+            <button type="button" className="settings-btn" onClick={() => setSettingsOpen(true)} aria-label="Account settings" title="Account settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+            <button type="button" className="primary new-video-btn" onClick={addProject}>
+              + New video
+            </button>
+          </div>
         </div>
       </header>
 
@@ -610,6 +670,7 @@ export default function App() {
       )}
       {renderDeleteModal()}
       {renderMissPickerModal()}
+      {renderSettingsModal()}
       {videoModalProject && media[videoModalProject.id]?.videoUrl && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVideoModalProjectId(null); }}>
           <div className="video-modal" role="dialog" aria-modal="true" aria-labelledby="video-modal-title">
