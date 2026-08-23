@@ -1108,6 +1108,8 @@ canvas {
 .result-actions button, .posted-button { border: 1px solid; border-radius: 7px; cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; padding: 7px 13px; text-transform: uppercase; }
 .hit-button { background: rgba(37, 156, 91, 0.14); border-color: #269c5b; color: #63d38e; }
 .miss-button { background: rgba(190, 56, 61, 0.14); border-color: #be383d; color: #ed777b; }
+.reset-button { background: rgba(244, 242, 232, 0.06); border-color: rgba(244, 242, 232, 0.3); color: rgba(244, 242, 232, 0.75); }
+.reset-button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
 .result-actions button:disabled { cursor: not-allowed; opacity: 0.45; }
 .posted-button { background: rgba(232, 178, 61, 0.14); border-color: var(--gold); color: var(--gold); }
 .posted-button:disabled { cursor: not-allowed; opacity: 0.55; }

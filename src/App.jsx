@@ -298,6 +298,19 @@ export default function App() {
     await saveMedia(id, { videoBlob: oldMedia?.videoBlob, overviewBlob: oldMedia?.overviewBlob, resultBlob, result });
   }
 
+  async function resetResult(id) {
+    const oldMedia = media[id];
+    if (oldMedia?.resultUrl) URL.revokeObjectURL(oldMedia.resultUrl);
+    const nextMedia = { ...oldMedia, resultBlob: undefined, resultUrl: null, result: undefined };
+    setMedia((prev) => ({ ...prev, [id]: nextMedia }));
+    setProjects((prev) => prev.map((currentProject) => {
+      if (currentProject.id !== id) return currentProject;
+      const { result, missedPickIndexes, ...rest } = currentProject;
+      return rest;
+    }));
+    await saveMedia(id, { videoBlob: oldMedia?.videoBlob, overviewBlob: oldMedia?.overviewBlob, resultBlob: undefined, result: undefined });
+  }
+
   function openMissPicker(id) {
     setMissPickerProjectId(id);
     setMissPickerSelected([]);
@@ -554,6 +567,7 @@ export default function App() {
                 <div className="result-actions">
                   <button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')} disabled={Boolean(p.result)}>Hit</button>
                   <button type="button" className="miss-button" onClick={() => openMissPicker(p.id)} disabled={Boolean(p.result)}>Miss</button>
+                  <button type="button" className="reset-button" onClick={() => resetResult(p.id)} disabled={!p.result} title="Clear the Hit/Miss result — leaves the posted status untouched">Reset</button>
                 </div>
                 <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
                   <span aria-hidden="true">▣</span> {p.status === 'posted' ? 'Posted' : 'Mark posted'}
