@@ -25,6 +25,7 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [editingPickIndex, setEditingPickIndex] = useState(null);
   const [rowOddsDrafts, setRowOddsDrafts] = useState({});
   const [descriptionCopied, setDescriptionCopied] = useState(false);
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
 
   // Redraw the static preview whenever the project data changes. Crests load
   // asynchronously, so draw once immediately (falling back to plain text for
@@ -116,6 +117,7 @@ const ProjectCard = forwardRef(function ProjectCard(
     setOddsInput(Number(pick.odds).toFixed(2));
     setEditingPickIndex(index);
     setError('');
+    setManualEntryOpen(true);
   }
 
   function cancelEdit() {
@@ -316,69 +318,85 @@ const ProjectCard = forwardRef(function ProjectCard(
 
           <MatchPicker picks={project.picks} onAddPick={addLivePick} disabled={project.picks.length >= 8} />
 
-          <form onSubmit={addPick} className="pick-form">
-            <label htmlFor={`match-${project.id}`}>Match</label>
-            <div className="match-teams">
-              <input
-                id={`home-team-${project.id}`}
-                type="text"
-                placeholder="Arsenal"
-                value={homeTeamInput}
-                onChange={(e) => setHomeTeamInput(e.target.value)}
-                aria-label="Home team"
-              />
-              <span aria-hidden="true">-</span>
-              <input
-                id={`away-team-${project.id}`}
-                type="text"
-                placeholder="Coventry City"
-                value={awayTeamInput}
-                onChange={(e) => setAwayTeamInput(e.target.value)}
-                aria-label="Away team"
-              />
-            </div>
-            <div className="grid3">
-              <div>
-                <label htmlFor={`pick-${project.id}`}>Pick</label>
-                <input
-                  id={`pick-${project.id}`}
-                  type="text"
-                  placeholder="Ajax wins"
-                  value={pickInput}
-                  onChange={(e) => setPickInput(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor={`odds-${project.id}`}>Odds</label>
-                <div className="odds-input-control">
-                  <input
-                    id={`odds-${project.id}`}
-                    type="number"
-                    step="0.01"
-                    min="1.01"
-                    placeholder="1.85"
-                    value={oddsInput}
-                    onChange={(e) => setOddsInput(e.target.value)}
-                    onBlur={formatOddsInput}
-                  />
-                  <div className="odds-stepper">
-                    <button type="button" onClick={() => changeOdds(0.01)} aria-label="Increase odds">+</button>
-                    <button type="button" onClick={() => changeOdds(-0.01)} aria-label="Decrease odds">−</button>
-                  </div>
-                </div>
-              </div>
-              <div className="add-btn-wrap">
-                <button type="submit" className="primary small">
-                  {editingPickIndex === null ? '+' : '✓'}
-                </button>
-              </div>
-            </div>
-          </form>
-          {editingPickIndex !== null && (
-            <button type="button" className="cancel-pick-edit" onClick={cancelEdit}>
-              Cancel edit
+          <div className={`manual-entry${manualEntryOpen ? ' open' : ''}`}>
+            <button
+              type="button"
+              className="manual-entry-toggle"
+              onClick={() => setManualEntryOpen((open) => !open)}
+              aria-expanded={manualEntryOpen}
+              aria-controls={`manual-entry-body-${project.id}`}
+            >
+              <span>Manual entry</span>
+              <span className="manual-entry-caret" aria-hidden="true">▾</span>
             </button>
-          )}
+            {manualEntryOpen && (
+              <div id={`manual-entry-body-${project.id}`} className="manual-entry-body">
+                <form onSubmit={addPick} className="pick-form">
+                  <label htmlFor={`match-${project.id}`}>Match</label>
+                  <div className="match-teams">
+                    <input
+                      id={`home-team-${project.id}`}
+                      type="text"
+                      placeholder="Arsenal"
+                      value={homeTeamInput}
+                      onChange={(e) => setHomeTeamInput(e.target.value)}
+                      aria-label="Home team"
+                    />
+                    <span aria-hidden="true">-</span>
+                    <input
+                      id={`away-team-${project.id}`}
+                      type="text"
+                      placeholder="Coventry City"
+                      value={awayTeamInput}
+                      onChange={(e) => setAwayTeamInput(e.target.value)}
+                      aria-label="Away team"
+                    />
+                  </div>
+                  <div className="grid3">
+                    <div>
+                      <label htmlFor={`pick-${project.id}`}>Pick</label>
+                      <input
+                        id={`pick-${project.id}`}
+                        type="text"
+                        placeholder="Ajax wins"
+                        value={pickInput}
+                        onChange={(e) => setPickInput(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`odds-${project.id}`}>Odds</label>
+                      <div className="odds-input-control">
+                        <input
+                          id={`odds-${project.id}`}
+                          type="number"
+                          step="0.01"
+                          min="1.01"
+                          placeholder="1.85"
+                          value={oddsInput}
+                          onChange={(e) => setOddsInput(e.target.value)}
+                          onBlur={formatOddsInput}
+                        />
+                        <div className="odds-stepper">
+                          <button type="button" onClick={() => changeOdds(0.01)} aria-label="Increase odds">+</button>
+                          <button type="button" onClick={() => changeOdds(-0.01)} aria-label="Decrease odds">−</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="add-btn-wrap">
+                      <button type="submit" className="primary small">
+                        {editingPickIndex === null ? '+' : '✓'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+                {editingPickIndex !== null && (
+                  <button type="button" className="cancel-pick-edit" onClick={cancelEdit}>
+                    Cancel edit
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {error && <div className="error">{error}</div>}
 
           <div className="pick-list-heading">
