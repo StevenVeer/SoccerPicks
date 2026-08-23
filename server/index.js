@@ -52,6 +52,66 @@ function normalizeMatch(event, league) {
   };
 }
 
+// TheSportsDB's shared "3" test key works without any signup, at low volume —
+// fine for a personal, single-user tool like this one.
+const SPORTSDB_API_KEY = process.env.SPORTSDB_API_KEY || '3';
+const crestCache = new Map();
+const CREST_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
+const CREST_NOT_FOUND = Symbol('crest-not-found');
+
+async function fetchCrest(teamName) {
+  const searchUrl = `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/searchteams.php?t=${encodeURIComponent(teamName)}`;
+  const searchResponse = await fetch(searchUrl);
+  if (!searchResponse.ok) throw new Error(`TheSportsDB search failed (${searchResponse.status})`);
+  const searchData = await searchResponse.json();
+  const teams = searchData.teams || [];
+  const team = teams.find((t) => t.strSport === 'Soccer') || teams[0];
+  const badgeUrl = team?.strTeamBadge;
+  if (!badgeUrl) return null;
+
+  const imageResponse = await fetch(badgeUrl);
+  if (!imageResponse.ok) throw new Error(`Crest image fetch failed (${imageResponse.status})`);
+  const contentType = imageResponse.headers.get('content-type') || 'image/png';
+  const buffer = Buffer.from(await imageResponse.arrayBuffer());
+  return { buffer, contentType };
+}
+
+app.get('/api/teams/crest', async (req, res) => {
+  const name = (req.query.name || '').trim();
+  if (!name) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  const key = name.toLowerCase();
+  const cached = crestCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    if (cached.value === CREST_NOT_FOUND) {
+      res.status(404).end();
+    } else {
+      res.set('Content-Type', cached.value.contentType);
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.send(cached.value.buffer);
+    }
+    return;
+  }
+
+  try {
+    const crest = await fetchCrest(name);
+    const value = crest || CREST_NOT_FOUND;
+    crestCache.set(key, { value, expiresAt: Date.now() + CREST_CACHE_MS });
+    if (!crest) {
+      res.status(404).end();
+      return;
+    }
+    res.set('Content-Type', crest.contentType);
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(crest.buffer);
+  } catch (error) {
+    res.status(502).json({ error: error.message });
+  }
+});
+
 function dateBounds(date) {
   return {
     from: `${date}T00:00:00Z`,

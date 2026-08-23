@@ -3,6 +3,7 @@ import ProjectCard from './components/ProjectCard.jsx';
 import { dateStamp, getDescription, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
 import { PREVIEW_T, renderCanvas, drawWinnerStamp } from './lib/canvasRenderer';
+import { preloadCrestsForPicks } from './lib/teamCrests';
 import { archiveProject, deleteArchivedProject } from './lib/archive';
 
 let idCounter = 1;
@@ -36,7 +37,8 @@ function monthLabel(value) {
   return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(value);
 }
 
-function createOverviewBlob(project) {
+async function createOverviewBlob(project) {
+  await preloadCrestsForPicks(project.picks);
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1920;
@@ -44,7 +46,8 @@ function createOverviewBlob(project) {
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
-function generateResultBlob(project, result, missedPickIndexes) {
+async function generateResultBlob(project, result, missedPickIndexes) {
+  await preloadCrestsForPicks(project.picks);
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1920;

@@ -2,7 +2,7 @@
 
 React (Vite) dashboard om TikTok-video's te maken voor soccer picks. Je typt per video een titel, account-handle, disclaimer en een lijst wedstrijden/picks/odds in; de app tekent daar live een 9:16 "ticket"-preview van en kan er een `.webm`-video van opnemen, met de gecombineerde odds (parlay) onderaan.
 
-Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds); de odds zelf typ je zelf in, gebaseerd op een vaste lijst standaardpicks.
+Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds); de odds zelf typ je zelf in, gebaseerd op een vaste lijst standaardpicks. Bij elke pick worden ook de teamlogo's opgehaald (via TheSportsDB, met de gratis test-key als default) en in het ticket getekend naast de teamnamen; ontbreekt een logo, dan valt de tekst gewoon terug op alleen de teamnaam.
 
 Je kunt meerdere video's tegelijk beheren — elk met eigen picks — en ze allemaal in één keer genereren en als zip downloaden.
 
@@ -28,7 +28,7 @@ npm run dev            # frontend, http://localhost:5173
 
 cd server
 npm install
-# .env met DATABASE_URL, ODDS_API_KEY en eventueel VIDEO_DIR
+# .env met DATABASE_URL, ODDS_API_KEY en eventueel VIDEO_DIR / SPORTSDB_API_KEY
 node index.js           # API, http://localhost:3001
 ```
 
@@ -63,9 +63,10 @@ src/
     timeline.js               – animatietiming (intro, picks, parlay-reveal, outro)
     utils.js                   – kleine hulpfuncties (clamp, slugify, rounded rects, ...)
     pickTemplates.js          – vaste lijst van 14 standaard weddenschap-types per wedstrijd
+    teamCrests.js               – haalt en cachet teamlogo's op voor gebruik in de canvas
     archive.js                 – stuurt project + media naar de eigen archief-API (faalt stil)
 server/
-  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`) en archief (`/api/archive`)
+  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`), teamlogo-proxy (`/api/teams/crest`) en archief (`/api/archive`)
   db.js                        – Postgres-connectiepool
 ```
 

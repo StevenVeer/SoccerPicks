@@ -1,5 +1,6 @@
 import { clamp, ease, truncate, truncateToWidth, roundRectPath } from './utils';
 import { timeline } from './timeline';
+import { getCachedCrest, splitMatchTeams } from './teamCrests';
 
 function drawBackground(c, W, H) {
   const g = c.createLinearGradient(0, 0, 0, H);
@@ -81,6 +82,62 @@ function drawCardBackground(c, top, bottom, W, alpha) {
   c.restore();
 }
 
+// Draws "[crest] Home vs Away [crest]" at (x, baselineY), fitting inside
+// maxWidth. Assumes c.font/fillStyle are already set for the team name text.
+// Falls back to the raw match string when it isn't a "Home - Away" pair, or
+// when neither team has a crest cached yet.
+function drawMatchLine(c, match, x, baselineY, maxWidth, missed) {
+  const [home, away] = splitMatchTeams(match);
+  const homeCrest = home ? getCachedCrest(home) : null;
+  const awayCrest = away ? getCachedCrest(away) : null;
+
+  if (!home || !away || (!homeCrest && !awayCrest)) {
+    c.fillText(truncateToWidth(c, match, maxWidth), x, baselineY);
+    return;
+  }
+
+  const nameFont = c.font;
+  const vsFont = '500 26px Oswald';
+  const iconSize = 38;
+  const iconGap = 10;
+  const segGap = 14;
+
+  c.font = vsFont;
+  const vsWidth = c.measureText('vs').width;
+  c.font = nameFont;
+
+  const homeIconW = homeCrest ? iconSize + iconGap : 0;
+  const awayIconW = awayCrest ? iconSize + iconGap : 0;
+  const textBudget = maxWidth - homeIconW - awayIconW - vsWidth - segGap * 2;
+  const homeBudget = Math.max(40, textBudget * 0.5);
+  const awayBudget = Math.max(40, textBudget - homeBudget);
+
+  const homeText = truncateToWidth(c, home, homeBudget);
+  const awayText = truncateToWidth(c, away, awayBudget);
+  const iconY = baselineY - iconSize + 10;
+
+  let cursorX = x;
+  if (homeCrest) {
+    c.drawImage(homeCrest, cursorX, iconY, iconSize, iconSize);
+    cursorX += homeIconW;
+  }
+  c.fillText(homeText, cursorX, baselineY);
+  cursorX += c.measureText(homeText).width + segGap;
+
+  c.save();
+  c.font = vsFont;
+  c.fillStyle = missed ? 'rgba(244,242,232,0.35)' : 'rgba(244,242,232,0.5)';
+  c.fillText('vs', cursorX, baselineY);
+  c.restore();
+  cursorX += vsWidth + segGap;
+
+  if (awayCrest) {
+    c.drawImage(awayCrest, cursorX, iconY, iconSize, iconSize);
+    cursorX += awayIconW;
+  }
+  c.fillText(awayText, cursorX, baselineY);
+}
+
 function drawPickRow(c, pick, rowY, rowH, W, progress, missed) {
   const alpha = progress;
   const offsetX = 60 * (1 - progress);
@@ -107,7 +164,7 @@ function drawPickRow(c, pick, rowY, rowH, W, progress, missed) {
   const badgeW = 150;
   const badgeX = W - 100 - badgeW;
   const matchMaxWidth = badgeX - paddingX - 10;
-  c.fillText(truncateToWidth(c, pick.match, matchMaxWidth), paddingX, matchY);
+  drawMatchLine(c, pick.match, paddingX, matchY, matchMaxWidth, missed);
 
   c.fillStyle = missed ? 'rgba(232,178,61,0.5)' : '#E8B23D';
   c.font = '400 32px Oswald';

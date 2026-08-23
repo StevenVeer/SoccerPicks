@@ -3,6 +3,7 @@ import { renderCanvas, PREVIEW_T } from '../lib/canvasRenderer';
 import { timeline } from '../lib/timeline';
 import { recordCanvasVideo } from '../lib/videoRecorder';
 import { dateStamp, getDescription, slugify } from '../lib/utils';
+import { preloadCrestsForPicks } from '../lib/teamCrests';
 import MatchPicker from './MatchPicker.jsx';
 
 const ProjectCard = forwardRef(function ProjectCard(
@@ -25,11 +26,22 @@ const ProjectCard = forwardRef(function ProjectCard(
   const [rowOddsDrafts, setRowOddsDrafts] = useState({});
   const [descriptionCopied, setDescriptionCopied] = useState(false);
 
-  // Redraw the static preview whenever the project data changes.
+  // Redraw the static preview whenever the project data changes. Crests load
+  // asynchronously, so draw once immediately (falling back to plain text for
+  // any team not yet cached) and redraw again once they're ready.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || status === 'recording' || isPreviewing) return;
     renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
+    let cancelled = false;
+    preloadCrestsForPicks(project.picks).then(() => {
+      if (cancelled) return;
+      const currentCanvas = canvasRef.current;
+      if (currentCanvas) renderCanvas(currentCanvas.getContext('2d'), PREVIEW_T, project);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [project, status, isPreviewing]);
 
   // Redraw once web fonts are actually loaded (first paint can happen before that).
@@ -234,6 +246,7 @@ const ProjectCard = forwardRef(function ProjectCard(
     }
 
     try {
+      await preloadCrestsForPicks(project.picks);
       const blob = await recordCanvasVideo(
         canvasEl,
         project,
