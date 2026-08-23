@@ -220,6 +220,41 @@ input:focus {
   font-family: 'Space Mono', monospace;
 }
 
+.manual-entry {
+  margin-bottom: 14px;
+}
+.manual-entry-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(244, 242, 232, 0.15);
+  border-radius: 9px;
+  color: rgba(244, 242, 232, 0.65);
+  cursor: pointer;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 11px 12px;
+}
+.manual-entry-toggle:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.manual-entry-caret {
+  font-size: 12px;
+  transition: transform 0.15s ease;
+}
+.manual-entry.open .manual-entry-caret {
+  transform: rotate(180deg);
+}
+.manual-entry-body {
+  margin-top: 12px;
+}
+
 .grid3 {
   display: grid;
   grid-template-columns: 1fr 1fr 46px;
