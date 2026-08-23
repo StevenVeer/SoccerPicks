@@ -115,7 +115,6 @@ export default function App() {
   const [videoModalProjectId, setVideoModalProjectId] = useState(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const videoModalRef = useRef(null);
-  const [zipping, setZipping] = useState(false);
   const cardRefs = useRef({});
 
   useEffect(() => {
@@ -345,39 +344,6 @@ export default function App() {
     await Promise.allSettled(projects.map((p) => cardRefs.current[p.id]?.generate()));
   }
 
-  async function downloadAllZip() {
-    const ready = projects.filter((p) => media[p.id]?.videoBlob);
-    if (ready.length === 0) return;
-    setZipping(true);
-    try {
-      const { default: JSZip } = await import('jszip');
-      const zip = new JSZip();
-      const usedNames = new Set();
-      const today = dateStamp();
-      ready.forEach((p) => {
-        let name = `${slugify(p.title)}-${today}.webm`;
-        let i = 2;
-        while (usedNames.has(name)) {
-          name = `${slugify(p.title)}-${today}-${i}.webm`;
-          i += 1;
-        }
-        usedNames.add(name);
-        zip.file(name, media[p.id].videoBlob);
-      });
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `soccer-picks-videos-${today}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } finally {
-      setZipping(false);
-    }
-  }
-
   const readyCount = projects.filter((p) => media[p.id]?.videoBlob).length;
   const activeProject = projects.find((project) => project.id === activeProjectId);
   const videoModalProject = projects.find((project) => project.id === videoModalProjectId);
@@ -500,24 +466,17 @@ export default function App() {
   return (
     <div className="app-wrap">
       <header className="top dashboard-top">
-        <div className="eyebrow">Content dashboard</div>
-        <h1>⚽ Soccer Picks Studio</h1>
-        <p className="sub">Your generated picks, ready to review.</p>
+        <div className="dashboard-top-row">
+          <div>
+            <div className="eyebrow">Content dashboard</div>
+            <h1>⚽ Soccer Picks Studio</h1>
+            <p className="sub">Your generated picks, ready to review.</p>
+          </div>
+          <button type="button" className="primary new-video-btn" onClick={addProject}>
+            + New video
+          </button>
+        </div>
       </header>
-
-      <div className="toolbar">
-        <button type="button" className="primary" onClick={addProject}>
-          + New video
-        </button>
-        <button
-          type="button"
-          className="primary outline"
-          onClick={downloadAllZip}
-          disabled={readyCount === 0 || zipping}
-        >
-          {zipping ? 'Creating zip…' : `Download all (.zip) — ${readyCount}/${projects.length}`}
-        </button>
-      </div>
 
       <div className="dashboard-stats">
         <div><b>{projects.length}</b><span>Total videos</span></div>
