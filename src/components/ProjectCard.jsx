@@ -2,18 +2,8 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } f
 import { renderCanvas, PREVIEW_T } from '../lib/canvasRenderer';
 import { timeline } from '../lib/timeline';
 import { recordCanvasVideo } from '../lib/videoRecorder';
-import { dateStamp, slugify } from '../lib/utils';
+import { dateStamp, getDescription, slugify } from '../lib/utils';
 import MatchPicker from './MatchPicker.jsx';
-
-function getDescription(pickCount) {
-  const pickLabel = pickCount === 1 ? 'pick' : 'picks';
-  return `⚽️ ${pickCount} football ${pickLabel} I’m backing today 👀
-
-Which one are you taking? 👇
-Follow for daily football predictions & value bets 📈
-
-#football #footballtips #footballpredictions #bettingtips #soccer #soccerbets #valuebets #footballbetting #bettingpicks #sportsbetting`;
-}
 
 const ProjectCard = forwardRef(function ProjectCard(
   { project, existingVideoUrl, onChange, onRemove, onDuplicate, onGenerationStart, onGenerationEnd, onVideoReady },

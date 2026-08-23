@@ -55,3 +55,13 @@ export function dateStamp(date = new Date()) {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+export function getDescription(pickCount) {
+  const pickLabel = pickCount === 1 ? 'pick' : 'picks';
+  return `⚽️ ${pickCount} football ${pickLabel} I’m backing today 👀
+
+Which one are you taking? 👇
+Follow for daily football predictions & value bets 📈
+
+#football #footballtips #footballpredictions #bettingtips #soccer #soccerbets #valuebets #footballbetting #bettingpicks #sportsbetting`;
+}

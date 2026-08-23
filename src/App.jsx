@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ProjectCard from './components/ProjectCard.jsx';
-import { dateStamp, slugify } from './lib/utils';
+import { dateStamp, getDescription, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
 import { PREVIEW_T, renderCanvas, drawWinnerStamp } from './lib/canvasRenderer';
 import { archiveProject, deleteArchivedProject } from './lib/archive';
@@ -116,6 +116,7 @@ export default function App() {
   const [videoPlaying, setVideoPlaying] = useState(false);
   const videoModalRef = useRef(null);
   const [zipping, setZipping] = useState(false);
+  const [copiedDescriptionId, setCopiedDescriptionId] = useState(null);
   const cardRefs = useRef({});
 
   useEffect(() => {
@@ -345,6 +346,16 @@ export default function App() {
     await Promise.allSettled(projects.map((p) => cardRefs.current[p.id]?.generate()));
   }
 
+  async function copyDescription(project) {
+    try {
+      await navigator.clipboard.writeText(getDescription(project.picks.length));
+      setCopiedDescriptionId(project.id);
+      window.setTimeout(() => setCopiedDescriptionId((prev) => (prev === project.id ? null : prev)), 1800);
+    } catch {
+      // Clipboard access can fail (permissions, insecure context) — nothing to recover here.
+    }
+  }
+
   async function downloadAllZip() {
     const ready = projects.filter((p) => media[p.id]?.videoBlob);
     if (ready.length === 0) return;
@@ -553,6 +564,9 @@ export default function App() {
                 <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : generatingIds[p.id] ? 'Generating…' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
                 <div className="video-item-links">
                   <button type="button" className="link-btn link-btn-gold" onClick={() => setActiveProjectId(p.id)}>Open editor</button>
+                  <button type="button" className="link-btn" onClick={() => copyDescription(p)}>
+                    {copiedDescriptionId === p.id ? 'Copied' : 'Copy description'}
+                  </button>
                   {(media[p.id]?.videoUrl || media[p.id]?.resultUrl) && (
                     <details className="download-menu download-menu-top">
                       <summary>Download</summary>
