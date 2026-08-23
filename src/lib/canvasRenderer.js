@@ -114,7 +114,7 @@ function drawMatchLine(c, match, x, baselineY, maxWidth, missed) {
 
   const homeText = truncateToWidth(c, home, homeBudget);
   const awayText = truncateToWidth(c, away, awayBudget);
-  const iconY = baselineY - iconSize;
+  const iconY = baselineY - iconSize + 2;
 
   let cursorX = x;
   if (homeCrest) {
