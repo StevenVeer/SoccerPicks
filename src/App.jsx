@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ProjectCard from './components/ProjectCard.jsx';
-import { dateStamp, slugify } from './lib/utils';
+import { dateStamp, getDescription, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
 import { PREVIEW_T, renderCanvas, drawWinnerStamp } from './lib/canvasRenderer';
 import { archiveProject, deleteArchivedProject } from './lib/archive';
@@ -115,6 +115,7 @@ export default function App() {
   const [videoModalProjectId, setVideoModalProjectId] = useState(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const videoModalRef = useRef(null);
+  const [copiedDescriptionId, setCopiedDescriptionId] = useState(null);
   const cardRefs = useRef({});
 
   useEffect(() => {
@@ -344,6 +345,16 @@ export default function App() {
     await Promise.allSettled(projects.map((p) => cardRefs.current[p.id]?.generate()));
   }
 
+  async function copyDescription(project) {
+    try {
+      await navigator.clipboard.writeText(getDescription(project.picks.length));
+      setCopiedDescriptionId(project.id);
+      window.setTimeout(() => setCopiedDescriptionId((prev) => (prev === project.id ? null : prev)), 1800);
+    } catch {
+      // Clipboard access can fail (permissions, insecure context) — nothing to recover here.
+    }
+  }
+
   const unitsProfit = projects.reduce((total, p) => {
     if (p.result === 'hit') {
       const combinedOdds = p.picks.reduce((acc, pick) => acc * pick.odds, 1);
@@ -540,6 +551,15 @@ export default function App() {
                   <button type="button" className="miss-button" onClick={() => openMissPicker(p.id)} disabled={Boolean(p.result)}>Miss</button>
                   <button type="button" className="reset-button" onClick={() => resetResult(p.id)} disabled={!p.result} title="Clear the Hit/Miss result — leaves the posted status untouched">Reset</button>
                 </div>
+                {p.status !== 'posted' && (
+                  <button type="button" className="copy-description-button" onClick={() => copyDescription(p)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    {copiedDescriptionId === p.id ? 'Copied' : 'Copy'}
+                  </button>
+                )}
                 <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
                   <span aria-hidden="true">▣</span> {p.status === 'posted' ? 'Posted' : 'Mark posted'}
                 </button>
