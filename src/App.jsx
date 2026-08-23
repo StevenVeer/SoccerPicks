@@ -564,9 +564,6 @@ export default function App() {
                 <span className="section-kicker">{p.picks.length} picks · {p.status === 'posted' ? 'Posted' : generatingIds[p.id] ? 'Generating…' : media[p.id]?.videoBlob ? 'Generated' : 'Draft'}</span>
                 <div className="video-item-links">
                   <button type="button" className="link-btn link-btn-gold" onClick={() => setActiveProjectId(p.id)}>Open editor</button>
-                  <button type="button" className="link-btn" onClick={() => copyDescription(p)}>
-                    {copiedDescriptionId === p.id ? 'Copied' : 'Copy description'}
-                  </button>
                   {(media[p.id]?.videoUrl || media[p.id]?.resultUrl) && (
                     <details className="download-menu download-menu-top">
                       <summary>Download</summary>
@@ -588,6 +585,11 @@ export default function App() {
                   <button type="button" className="miss-button" onClick={() => openMissPicker(p.id)} disabled={Boolean(p.result)}>Miss</button>
                   <button type="button" className="reset-button" onClick={() => resetResult(p.id)} disabled={!p.result} title="Clear the Hit/Miss result — leaves the posted status untouched">Reset</button>
                 </div>
+                {p.status !== 'posted' && (
+                  <button type="button" className="copy-description-button" onClick={() => copyDescription(p)}>
+                    {copiedDescriptionId === p.id ? 'Copied' : 'Copy description'}
+                  </button>
+                )}
                 <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
                   <span aria-hidden="true">▣</span> {p.status === 'posted' ? 'Posted' : 'Mark posted'}
                 </button>

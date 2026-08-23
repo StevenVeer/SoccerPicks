@@ -1105,7 +1105,9 @@ canvas {
 .download-menu-options a { padding: 8px 9px; color: var(--chalk); font-family: 'Oswald', sans-serif; font-size: 11px; text-decoration: none; white-space: nowrap; }
 .download-menu-options a:hover { background: rgba(232, 178, 61, 0.14); color: var(--gold); }
 .result-actions { display: flex; gap: 6px; }
-.result-actions button, .posted-button { border: 1px solid; border-radius: 7px; cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; padding: 7px 13px; text-transform: uppercase; }
+.result-actions button, .posted-button, .copy-description-button { border: 1px solid; border-radius: 7px; cursor: pointer; font-family: 'Oswald', sans-serif; font-size: 11px; padding: 7px 13px; text-transform: uppercase; }
+.copy-description-button { background: rgba(244, 242, 232, 0.06); border-color: rgba(244, 242, 232, 0.3); color: rgba(244, 242, 232, 0.75); }
+.copy-description-button:hover { border-color: var(--gold); color: var(--gold); }
 .hit-button { background: rgba(37, 156, 91, 0.14); border-color: #269c5b; color: #63d38e; }
 .miss-button { background: rgba(190, 56, 61, 0.14); border-color: #be383d; color: #ed777b; }
 .reset-button { background: rgba(244, 242, 232, 0.06); border-color: rgba(244, 242, 232, 0.3); color: rgba(244, 242, 232, 0.75); }
