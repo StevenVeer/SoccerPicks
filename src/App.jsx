@@ -89,14 +89,19 @@ export default function App() {
       const stored = JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY));
       if (Array.isArray(stored)) {
         const usedIds = new Set();
-        const projectsWithUniqueIds = stored.map((project) => {
+        const projectsWithUniqueIds = stored.map((project, index) => {
           let projectId = Number(project.id) || 0;
           while (!projectId || usedIds.has(projectId)) projectId += 1;
           usedIds.add(projectId);
           const clientId = project.clientId || crypto.randomUUID();
-          return project.id === projectId && project.clientId === clientId
+          // Backfill createdAt for projects saved before it existed, using their
+          // original array position (= original creation order) so old entries
+          // still sort correctly relative to each other and always rank behind
+          // anything created after this migration runs.
+          const createdAt = project.createdAt || new Date(index * 1000).toISOString();
+          return project.id === projectId && project.clientId === clientId && project.createdAt === createdAt
             ? project
-            : { ...project, id: projectId, clientId };
+            : { ...project, id: projectId, clientId, createdAt };
         });
         idCounter = projectsWithUniqueIds.reduce((maxId, project) => Math.max(maxId, Number(project.id) || 0), 1);
         return projectsWithUniqueIds;
