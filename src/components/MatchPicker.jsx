@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { buildPickGroups } from '../lib/pickTemplates';
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', {
@@ -47,6 +47,8 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const [error, setError] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(`${date}T12:00:00Z`));
+  const [open, setOpen] = useState(true);
+  const bodyId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -127,154 +129,174 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   }
 
   return (
-    <section className="match-picker" aria-label="Current matches">
+    <section className={`match-picker${open ? ' open' : ''}`} aria-label="Current matches">
       <div className="match-picker-heading">
         <div>
           <span className="section-kicker">Live data</span>
           <h2>Choose a match</h2>
         </div>
-        <div className="date-picker-control">
-          <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, -1))} aria-label="Previous day">
-            ‹
-          </button>
-          <button type="button" className="date-display" onClick={() => setCalendarOpen((open) => !open)} aria-expanded={calendarOpen}>
-            <span aria-hidden="true">▣</span>
-            {shortDateFormatter.format(new Date(`${date}T12:00:00Z`))}
-          </button>
-          <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, 1))} aria-label="Next day">
-            ›
-          </button>
-          {calendarOpen && (
-            <div className="calendar-popover">
-              <div className="calendar-header">
-                <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1)))} aria-label="Previous month">‹</button>
-                <strong>{monthLabel(calendarMonth)}</strong>
-                <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)))} aria-label="Next month">›</button>
-              </div>
-              <div className="calendar-weekdays">{['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((day) => <span key={day}>{day}</span>)}</div>
-              <div className="calendar-grid">
-                {days.map((day, index) => day ? (
-                  <button
-                    type="button"
-                    className={day.toISOString().slice(0, 10) === date ? 'selected' : ''}
-                    key={day.toISOString()}
-                    onClick={() => chooseDate(day.toISOString().slice(0, 10))}
-                  >
-                    {day.getUTCDate()}
-                  </button>
-                ) : <span className="calendar-empty" key={`empty-${index}`} />)}
-              </div>
+        <div className="match-picker-heading-actions">
+          {open && (
+            <div className="date-picker-control">
+              <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, -1))} aria-label="Previous day">
+                ‹
+              </button>
+              <button type="button" className="date-display" onClick={() => setCalendarOpen((calOpen) => !calOpen)} aria-expanded={calendarOpen}>
+                <span aria-hidden="true">▣</span>
+                {shortDateFormatter.format(new Date(`${date}T12:00:00Z`))}
+              </button>
+              <button type="button" className="date-step" onClick={() => chooseDate(shiftDate(date, 1))} aria-label="Next day">
+                ›
+              </button>
+              {calendarOpen && (
+                <div className="calendar-popover">
+                  <div className="calendar-header">
+                    <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1)))} aria-label="Previous month">‹</button>
+                    <strong>{monthLabel(calendarMonth)}</strong>
+                    <button type="button" onClick={() => setCalendarMonth((month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)))} aria-label="Next month">›</button>
+                  </div>
+                  <div className="calendar-weekdays">{['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((day) => <span key={day}>{day}</span>)}</div>
+                  <div className="calendar-grid">
+                    {days.map((day, index) => day ? (
+                      <button
+                        type="button"
+                        className={day.toISOString().slice(0, 10) === date ? 'selected' : ''}
+                        key={day.toISOString()}
+                        onClick={() => chooseDate(day.toISOString().slice(0, 10))}
+                      >
+                        {day.getUTCDate()}
+                      </button>
+                    ) : <span className="calendar-empty" key={`empty-${index}`} />)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
+          <button
+            type="button"
+            className="match-picker-toggle"
+            onClick={() => setOpen((isOpen) => !isOpen)}
+            aria-expanded={open}
+            aria-controls={bodyId}
+            aria-label={open ? 'Collapse live data' : 'Expand live data'}
+            title={open ? 'Collapse' : 'Expand'}
+          >
+            <span className="match-picker-caret" aria-hidden="true">▾</span>
+          </button>
         </div>
-      </div>
-      <div className="match-picker-controls">
-        <div className="quick-dates" aria-label="Quick date selection">
-          {quickDates.map((quickDate, index) => (
-            <button
-              type="button"
-              className={date === quickDate ? 'active' : ''}
-              key={quickDate}
-              onClick={() => chooseDate(quickDate)}
-            >
-              {index === 0 ? 'Today' : 'Tomorrow'}
-            </button>
-          ))}
-        </div>
-        <div className="competition-select">
-          <select value={leagueId} onChange={(event) => changeLeague(event.target.value)} aria-label="Competition filter">
-            <option value="all">All competitions</option>
-            {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
-          </select>
-        </div>
-        <span className="data-note">{matches.length} matches</span>
       </div>
 
-      {loading && <div className="picker-message">Loading matches…</div>}
-      {error && <div className="error picker-error">{error}</div>}
-      {!loading && !error && visibleMatches.length === 0 && (
-        <div className="picker-message">No matches found for this date.</div>
-      )}
-      <div className="match-groups">
-        {groupedMatches.map((league) => (
-          <div className="match-group" key={league.id}>
-            <div className="match-group-heading">
-              <strong>{league.name}</strong>
-              <span>{league.matches.length} {league.matches.length === 1 ? 'match' : 'matches'}</span>
-            </div>
-            <div className="match-list">
-              {league.matches.map((match) => (
+      {open && (
+        <div id={bodyId}>
+          <div className="match-picker-controls">
+            <div className="quick-dates" aria-label="Quick date selection">
+              {quickDates.map((quickDate, index) => (
                 <button
                   type="button"
-                  className={`match-item${selectedMatch?.id === match.id ? ' selected' : ''}`}
-                  key={match.id}
-                  onClick={() => selectMatch(match)}
-                  disabled={disabled}
+                  className={date === quickDate ? 'active' : ''}
+                  key={quickDate}
+                  onClick={() => chooseDate(quickDate)}
                 >
-                  <span className="match-kickoff">{dateFormatter.format(new Date(match.kickoff))}</span>
-                  <strong>{match.home} <span>vs</span> {match.away}</strong>
+                  {index === 0 ? 'Today' : 'Tomorrow'}
                 </button>
               ))}
             </div>
-          </div>
-        ))}
-      </div>
-
-      {selectedMatch && (
-        <div className="odds-panel">
-          <div className="odds-panel-heading">
-            <div>
-              <span className="section-kicker">Picks</span>
-              <h3>{selectedMatch.home} vs {selectedMatch.away}</h3>
+            <div className="competition-select">
+              <select value={leagueId} onChange={(event) => changeLeague(event.target.value)} aria-label="Competition filter">
+                <option value="all">All competitions</option>
+                {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
+              </select>
             </div>
+            <span className="data-note">{matches.length} matches</span>
           </div>
-          {pickGroups.map((group) => (
-            <div className="market" key={group.title}>
-              <b>{group.title}</b>
-              {group.options && (
-                <div className="outcome-list">
-                  {group.options.map((option) => {
-                    const added = isOutcomeAdded(option);
-                    return (
-                      <button
-                        type="button"
-                        className={added ? 'added' : ''}
-                        key={option.key}
-                        onClick={() => togglePick(option)}
-                        disabled={disabled && !added}
-                      >
-                        <span>{option.short || option.label}</span>
-                        {added && <em>Added</em>}
-                      </button>
-                    );
-                  })}
+
+          {loading && <div className="picker-message">Loading matches…</div>}
+          {error && <div className="error picker-error">{error}</div>}
+          {!loading && !error && visibleMatches.length === 0 && (
+            <div className="picker-message">No matches found for this date.</div>
+          )}
+          <div className="match-groups">
+            {groupedMatches.map((league) => (
+              <div className="match-group" key={league.id}>
+                <div className="match-group-heading">
+                  <strong>{league.name}</strong>
+                  <span>{league.matches.length} {league.matches.length === 1 ? 'match' : 'matches'}</span>
                 </div>
-              )}
-              {group.goalRows && (
-                <div className="goal-grid">
-                  {group.goalRows.map(({ line, over, under }) => (
-                    <div className="goal-row" key={line}>
-                      {[over, under].map((option) => {
+                <div className="match-list">
+                  {league.matches.map((match) => (
+                    <button
+                      type="button"
+                      className={`match-item${selectedMatch?.id === match.id ? ' selected' : ''}`}
+                      key={match.id}
+                      onClick={() => selectMatch(match)}
+                      disabled={disabled}
+                    >
+                      <span className="match-kickoff">{dateFormatter.format(new Date(match.kickoff))}</span>
+                      <strong>{match.home} <span>vs</span> {match.away}</strong>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedMatch && (
+            <div className="odds-panel">
+              <div className="odds-panel-heading">
+                <div>
+                  <span className="section-kicker">Picks</span>
+                  <h3>{selectedMatch.home} vs {selectedMatch.away}</h3>
+                </div>
+              </div>
+              {pickGroups.map((group) => (
+                <div className="market" key={group.title}>
+                  <b>{group.title}</b>
+                  {group.options && (
+                    <div className="outcome-list">
+                      {group.options.map((option) => {
                         const added = isOutcomeAdded(option);
                         return (
                           <button
                             type="button"
-                            className={`goal-option${added ? ' added' : ''}`}
+                            className={added ? 'added' : ''}
                             key={option.key}
                             onClick={() => togglePick(option)}
                             disabled={disabled && !added}
                           >
-                            <span className="goal-option-label">{option.short}</span>
+                            <span>{option.short || option.label}</span>
                             {added && <em>Added</em>}
                           </button>
                         );
                       })}
                     </div>
-                  ))}
+                  )}
+                  {group.goalRows && (
+                    <div className="goal-grid">
+                      {group.goalRows.map(({ line, over, under }) => (
+                        <div className="goal-row" key={line}>
+                          {[over, under].map((option) => {
+                            const added = isOutcomeAdded(option);
+                            return (
+                              <button
+                                type="button"
+                                className={`goal-option${added ? ' added' : ''}`}
+                                key={option.key}
+                                onClick={() => togglePick(option)}
+                                disabled={disabled && !added}
+                              >
+                                <span className="goal-option-label">{option.short}</span>
+                                {added && <em>Added</em>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
     </section>
