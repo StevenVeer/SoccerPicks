@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ProjectCard from './components/ProjectCard.jsx';
-import { dateStamp, getDescription, slugify } from './lib/utils';
+import { dateStamp, getDescription, getResultDescription, slugify } from './lib/utils';
 import { deleteMedia, getAllMedia, saveMedia } from './lib/mediaStore';
 import { PREVIEW_T, renderCanvas, drawWinnerStamp } from './lib/canvasRenderer';
 import { preloadCrestsForPicks } from './lib/teamCrests';
@@ -367,8 +367,9 @@ export default function App() {
   }
 
   async function copyDescription(project) {
+    const text = project.result ? getResultDescription(project.result) : getDescription(project.picks.length);
     try {
-      await navigator.clipboard.writeText(getDescription(project.picks.length));
+      await navigator.clipboard.writeText(text);
       setCopiedDescriptionId(project.id);
       window.setTimeout(() => setCopiedDescriptionId((prev) => (prev === project.id ? null : prev)), 1800);
     } catch {
@@ -614,13 +615,18 @@ export default function App() {
                   <button type="button" className="miss-button" onClick={() => openMissPicker(p.id)} disabled={Boolean(p.result)}>Miss</button>
                   <button type="button" className="reset-button" onClick={() => resetResult(p.id)} disabled={!p.result} title="Clear the Hit/Miss result — leaves the posted status untouched">Reset</button>
                 </div>
-                {p.status !== 'posted' && (
-                  <button type="button" className="copy-description-button" onClick={() => copyDescription(p)}>
+                {(p.status !== 'posted' || p.result) && (
+                  <button
+                    type="button"
+                    className="copy-description-button"
+                    onClick={() => copyDescription(p)}
+                    title={p.result ? `Copy ${p.result} caption` : 'Copy description'}
+                  >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
-                    {copiedDescriptionId === p.id ? 'Copied' : 'Copy'}
+                    {copiedDescriptionId === p.id ? 'Copied' : p.result ? 'Copy caption' : 'Copy'}
                   </button>
                 )}
                 <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
