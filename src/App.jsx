@@ -44,26 +44,14 @@ function createOverviewBlob(project) {
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
-function generateResultBlob(project, result) {
+function generateResultBlob(project, result, missedPickIndexes) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1920;
-  renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
   const context = canvas.getContext('2d');
+  renderCanvas(context, PREVIEW_T, project, { result, missedPickIndexes });
   if (result === 'hit') {
     drawWinnerStamp(context, canvas.width);
-  } else {
-    context.save();
-    context.translate(540, 960);
-    context.rotate(-Math.atan2(1920, 1080));
-    context.fillStyle = 'rgba(190, 56, 61, 0.88)';
-    context.fillRect(-1000, -90, 2000, 180);
-    context.fillStyle = '#F4F2E8';
-    context.font = '700 92px Oswald';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText('MISS', 0, 0);
-    context.restore();
   }
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
@@ -121,6 +109,8 @@ export default function App() {
   const [postingCalendarMonth, setPostingCalendarMonth] = useState(() => new Date(`${todayDate()}T12:00:00Z`));
   const [postingCalendarOpen, setPostingCalendarOpen] = useState(false);
   const [deleteConfirmProjectId, setDeleteConfirmProjectId] = useState(null);
+  const [missPickerProjectId, setMissPickerProjectId] = useState(null);
+  const [missPickerSelected, setMissPickerSelected] = useState([]);
   const [generatingIds, setGeneratingIds] = useState({});
   const [videoModalProjectId, setVideoModalProjectId] = useState(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -295,17 +285,47 @@ export default function App() {
     setGeneratingIds((prev) => { const next = { ...prev }; delete next[id]; return next; });
   }
 
-  async function markResult(id, result) {
+  async function markResult(id, result, missedPickIndexes = []) {
     const project = projects.find((currentProject) => currentProject.id === id);
     if (!project) return;
-    const resultBlob = await generateResultBlob(project, result);
+    const resultBlob = await generateResultBlob(project, result, missedPickIndexes);
     if (!resultBlob) return;
     const oldMedia = media[id];
     if (oldMedia?.resultUrl) URL.revokeObjectURL(oldMedia.resultUrl);
     const nextMedia = { ...oldMedia, resultBlob, resultUrl: URL.createObjectURL(resultBlob), result };
     setMedia((prev) => ({ ...prev, [id]: nextMedia }));
-    setProjects((prev) => prev.map((currentProject) => currentProject.id === id ? { ...currentProject, result } : currentProject));
+    setProjects((prev) => prev.map((currentProject) => currentProject.id === id ? { ...currentProject, result, missedPickIndexes } : currentProject));
     await saveMedia(id, { videoBlob: oldMedia?.videoBlob, overviewBlob: oldMedia?.overviewBlob, resultBlob, result });
+  }
+
+  function openMissPicker(id) {
+    setMissPickerProjectId(id);
+    setMissPickerSelected([]);
+  }
+
+  function closeMissPicker() {
+    setMissPickerProjectId(null);
+    setMissPickerSelected([]);
+  }
+
+  function toggleMissPick(pickIndex) {
+    setMissPickerSelected((prev) => (
+      prev.includes(pickIndex) ? prev.filter((index) => index !== pickIndex) : [...prev, pickIndex]
+    ));
+  }
+
+  function toggleSelectAllMissPicks(project) {
+    setMissPickerSelected((prev) => (
+      prev.length === project.picks.length ? [] : project.picks.map((pick, index) => index)
+    ));
+  }
+
+  async function confirmMissPicks() {
+    const id = missPickerProjectId;
+    const selected = missPickerSelected;
+    setMissPickerProjectId(null);
+    setMissPickerSelected([]);
+    await markResult(id, 'miss', selected);
   }
 
   async function generateAll() {
@@ -375,6 +395,51 @@ export default function App() {
           <div className="delete-modal-actions">
             <button type="button" className="back-button" onClick={() => setDeleteConfirmProjectId(null)}>Cancel</button>
             <button type="button" className="modal-delete-button" onClick={confirmDeleteProject}>Delete anyway</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderMissPickerModal() {
+    if (missPickerProjectId === null) return null;
+    const project = projects.find((currentProject) => currentProject.id === missPickerProjectId);
+    if (!project) return null;
+    const allSelected = project.picks.length > 0 && missPickerSelected.length === project.picks.length;
+    return (
+      <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMissPicker(); }}>
+        <div className="miss-picker-modal" role="dialog" aria-modal="true" aria-labelledby="miss-picker-title">
+          <span className="section-kicker">Mark a miss</span>
+          <h2 id="miss-picker-title">Which picks missed?</h2>
+          <p>Select every leg that lost — only the picks you check will be marked, the rest stay as-is.</p>
+          {project.picks.length > 0 ? (
+            <>
+              <div className="miss-picker-list">
+                {project.picks.map((pick, index) => {
+                  const checked = missPickerSelected.includes(index);
+                  return (
+                    <label key={`${pick.match}-${index}`} className={`miss-picker-option${checked ? ' checked' : ''}`}>
+                      <input type="checkbox" checked={checked} onChange={() => toggleMissPick(index)} />
+                      <span className="miss-picker-option-text">
+                        <span className="miss-picker-option-match">{pick.match}</span>
+                        <span className="miss-picker-option-pick">{pick.pick} · {Number(pick.odds).toFixed(2)}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <button type="button" className="miss-picker-select-all" onClick={() => toggleSelectAllMissPicks(project)}>
+                {allSelected ? 'Deselect all' : 'Select all'}
+              </button>
+            </>
+          ) : (
+            <p>This ticket has no picks yet.</p>
+          )}
+          <div className="posting-modal-actions">
+            <button type="button" className="back-button" onClick={closeMissPicker}>Cancel</button>
+            <button type="button" className="save-button" onClick={confirmMissPicks} disabled={missPickerSelected.length === 0}>
+              Mark {missPickerSelected.length > 0 ? missPickerSelected.length : ''} miss{missPickerSelected.length === 1 ? '' : 'es'}
+            </button>
           </div>
         </div>
       </div>
@@ -488,7 +553,7 @@ export default function App() {
               <div className="video-item-actions">
                 <div className="result-actions">
                   <button type="button" className="hit-button" onClick={() => markResult(p.id, 'hit')} disabled={Boolean(p.result)}>Hit</button>
-                  <button type="button" className="miss-button" onClick={() => markResult(p.id, 'miss')} disabled={Boolean(p.result)}>Miss</button>
+                  <button type="button" className="miss-button" onClick={() => openMissPicker(p.id)} disabled={Boolean(p.result)}>Miss</button>
                 </div>
                 <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
                   <span aria-hidden="true">▣</span> {p.status === 'posted' ? 'Posted' : 'Mark posted'}
@@ -536,6 +601,7 @@ export default function App() {
         </div>
       )}
       {renderDeleteModal()}
+      {renderMissPickerModal()}
       {videoModalProject && media[videoModalProject.id]?.videoUrl && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVideoModalProjectId(null); }}>
           <div className="video-modal" role="dialog" aria-modal="true" aria-labelledby="video-modal-title">

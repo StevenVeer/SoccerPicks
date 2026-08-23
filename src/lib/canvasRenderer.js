@@ -81,7 +81,7 @@ function drawCardBackground(c, top, bottom, W, alpha) {
   c.restore();
 }
 
-function drawPickRow(c, pick, rowY, rowH, W, progress) {
+function drawPickRow(c, pick, rowY, rowH, W, progress, missed) {
   const alpha = progress;
   const offsetX = 60 * (1 - progress);
   c.save();
@@ -92,30 +92,51 @@ function drawPickRow(c, pick, rowY, rowH, W, progress) {
   const matchY = rowY + rowH * 0.4;
   const pickY = rowY + rowH * 0.7;
 
+  if (missed) {
+    c.save();
+    c.fillStyle = 'rgba(190,56,61,0.14)';
+    c.fillRect(60, rowY, W - 120, rowH);
+    c.fillStyle = '#BE383D';
+    c.fillRect(60, rowY, 6, rowH);
+    c.restore();
+  }
+
   c.textAlign = 'left';
-  c.fillStyle = '#F4F2E8';
+  c.fillStyle = missed ? 'rgba(244,242,232,0.55)' : '#F4F2E8';
   c.font = '600 40px Oswald';
   const badgeW = 150;
   const badgeX = W - 100 - badgeW;
   const matchMaxWidth = badgeX - paddingX - 10;
   c.fillText(truncateToWidth(c, pick.match, matchMaxWidth), paddingX, matchY);
 
-  c.fillStyle = '#E8B23D';
+  c.fillStyle = missed ? 'rgba(232,178,61,0.5)' : '#E8B23D';
   c.font = '400 32px Oswald';
   c.fillText(truncate(pick.pick, 28), paddingX, pickY);
 
   const badgeH = 64;
   const badgeY = rowY + rowH / 2 - badgeH / 2;
   roundRectPath(c, badgeX, badgeY, badgeW, badgeH, 12);
-  c.fillStyle = 'rgba(232,178,61,0.12)';
-  c.fill();
-  c.lineWidth = 2;
-  c.strokeStyle = '#E8B23D';
-  c.stroke();
-  c.fillStyle = '#E8B23D';
-  c.font = '700 36px "Space Mono", monospace';
-  c.textAlign = 'center';
-  c.fillText(pick.odds.toFixed(2), badgeX + badgeW / 2, badgeY + badgeH / 2 + 13);
+  if (missed) {
+    c.fillStyle = 'rgba(190,56,61,0.85)';
+    c.fill();
+    c.lineWidth = 2;
+    c.strokeStyle = '#BE383D';
+    c.stroke();
+    c.fillStyle = '#F4F2E8';
+    c.font = '700 30px Oswald';
+    c.textAlign = 'center';
+    c.fillText('MISS', badgeX + badgeW / 2, badgeY + badgeH / 2 + 10);
+  } else {
+    c.fillStyle = 'rgba(232,178,61,0.12)';
+    c.fill();
+    c.lineWidth = 2;
+    c.strokeStyle = '#E8B23D';
+    c.stroke();
+    c.fillStyle = '#E8B23D';
+    c.font = '700 36px "Space Mono", monospace';
+    c.textAlign = 'center';
+    c.fillText(pick.odds.toFixed(2), badgeX + badgeW / 2, badgeY + badgeH / 2 + 13);
+  }
 
   c.restore();
 }
@@ -258,7 +279,7 @@ export function drawWinnerStamp(c, W) {
 
 // Draws one frame of a project's ticket video at time t (ms).
 // Called repeatedly during recording, and once with a large t for a static preview.
-export function renderCanvas(ctx, t, project) {
+export function renderCanvas(ctx, t, project, resultInfo = {}) {
   const W = 1080;
   const H = 1920;
   const picks = project.picks || [];
@@ -287,7 +308,7 @@ export function renderCanvas(ctx, t, project) {
     const startT = tl.introDur + i * tl.pickStep;
     const prog = clamp((animationTime - startT) / tl.pickAnim, 0, 1);
     const rowY = cardTop + padding + i * rowH;
-    drawPickRow(ctx, p, rowY, rowH, W, prog);
+    drawPickRow(ctx, p, rowY, rowH, W, prog, Boolean(resultInfo.missedPickIndexes?.includes(i)));
     if (i < n - 1) drawPerforation(ctx, rowY + rowH, W);
   });
 
