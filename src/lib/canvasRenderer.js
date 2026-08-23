@@ -115,27 +115,37 @@ function drawPickRow(c, pick, rowY, rowH, W, progress, missed) {
 
   const badgeH = 64;
   const badgeY = rowY + rowH / 2 - badgeH / 2;
+  c.save();
+  if (missed) c.globalAlpha *= 0.4;
   roundRectPath(c, badgeX, badgeY, badgeW, badgeH, 12);
+  c.fillStyle = 'rgba(232,178,61,0.12)';
+  c.fill();
+  c.lineWidth = 2;
+  c.strokeStyle = '#E8B23D';
+  c.stroke();
+  c.fillStyle = '#E8B23D';
+  c.font = '700 36px "Space Mono", monospace';
+  c.textAlign = 'center';
+  c.fillText(pick.odds.toFixed(2), badgeX + badgeW / 2, badgeY + badgeH / 2 + 13);
+  c.restore();
+
   if (missed) {
-    c.fillStyle = 'rgba(190,56,61,0.85)';
+    // Rows shrink as more picks are added (up to 8), so size the corner tag to
+    // whatever gap is left above the odds badge instead of a fixed height.
+    const tagH = clamp(badgeY - rowY - 6, 18, 40);
+    const fontSize = Math.round(tagH * 0.5);
+    const tagPadX = tagH * 0.4;
+    c.font = `700 ${fontSize}px "Space Mono", monospace`;
+    const tagText = 'MISS';
+    const tagW = c.measureText(tagText).width + tagPadX * 2;
+    const tagX = W - 100 - tagW;
+    const tagY = rowY + 4;
+    roundRectPath(c, tagX, tagY, tagW, tagH, tagH / 4);
+    c.fillStyle = '#BE383D';
     c.fill();
-    c.lineWidth = 2;
-    c.strokeStyle = '#BE383D';
-    c.stroke();
     c.fillStyle = '#F4F2E8';
-    c.font = '700 30px Oswald';
     c.textAlign = 'center';
-    c.fillText('MISS', badgeX + badgeW / 2, badgeY + badgeH / 2 + 10);
-  } else {
-    c.fillStyle = 'rgba(232,178,61,0.12)';
-    c.fill();
-    c.lineWidth = 2;
-    c.strokeStyle = '#E8B23D';
-    c.stroke();
-    c.fillStyle = '#E8B23D';
-    c.font = '700 36px "Space Mono", monospace';
-    c.textAlign = 'center';
-    c.fillText(pick.odds.toFixed(2), badgeX + badgeW / 2, badgeY + badgeH / 2 + 13);
+    c.fillText(tagText, tagX + tagW / 2, tagY + tagH / 2 + fontSize * 0.35);
   }
 
   c.restore();
