@@ -251,8 +251,18 @@ input:focus {
 .manual-entry.open .manual-entry-caret {
   transform: rotate(180deg);
 }
+.manual-entry.open .manual-entry-toggle {
+  border-color: rgba(232, 178, 61, 0.3);
+  border-radius: 9px 9px 0 0;
+  background: rgba(232, 178, 61, 0.06);
+  color: var(--gold);
+}
 .manual-entry-body {
-  margin-top: 12px;
+  background: rgba(232, 178, 61, 0.045);
+  border: 1px solid rgba(232, 178, 61, 0.3);
+  border-top: none;
+  border-radius: 0 0 9px 9px;
+  padding: 14px 12px 16px;
 }
 
 .grid3 {
