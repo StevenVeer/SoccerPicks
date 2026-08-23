@@ -22,6 +22,7 @@ const LEAGUES = [
   { key: 'soccer_germany_bundesliga', name: 'Bundesliga', country: 'Germany' },
   { key: 'soccer_france_ligue_one', name: 'Ligue 1', country: 'France' },
   { key: 'soccer_netherlands_eredivisie', name: 'Eredivisie', country: 'Netherlands' },
+  { key: 'soccer_portugal_primeira_liga', name: 'Primeira Liga', country: 'Portugal' },
   { key: 'soccer_sweden_allsvenskan', name: 'Allsvenskan', country: 'Sweden' },
   { key: 'soccer_norway_eliteserien', name: 'Eliteserien', country: 'Norway' },
 ];
