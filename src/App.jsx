@@ -44,6 +44,30 @@ function createOverviewBlob(project) {
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
+function generateResultBlob(project, result) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
+  const context = canvas.getContext('2d');
+  if (result === 'hit') {
+    drawWinnerStamp(context, canvas.width);
+  } else {
+    context.save();
+    context.translate(540, 960);
+    context.rotate(-Math.atan2(1920, 1080));
+    context.fillStyle = 'rgba(190, 56, 61, 0.88)';
+    context.fillRect(-1000, -90, 2000, 180);
+    context.fillStyle = '#F4F2E8';
+    context.font = '700 92px Oswald';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText('MISS', 0, 0);
+    context.restore();
+  }
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
 function defaultProjects() {
   idCounter = 1;
   return [
@@ -117,19 +141,26 @@ export default function App() {
       const hydrated = {};
       for (const item of storedMedia) {
         let overviewBlob = item.overviewBlob;
-        if (!overviewBlob && item.videoBlob) {
-          const project = projects.find((currentProject) => currentProject.id === item.id);
-          if (project) {
-            overviewBlob = await createOverviewBlob(project);
-            if (overviewBlob) saveMedia(item.id, { ...item, overviewBlob }).catch(() => {});
+        let resultBlob = item.resultBlob;
+        const project = projects.find((currentProject) => currentProject.id === item.id);
+        if (!overviewBlob && item.videoBlob && project) {
+          overviewBlob = await createOverviewBlob(project);
+          if (overviewBlob) saveMedia(item.id, { ...item, overviewBlob }).catch(() => {});
+        }
+        if (item.result === 'hit' && project) {
+          const restamped = await generateResultBlob(project, 'hit');
+          if (restamped) {
+            resultBlob = restamped;
+            saveMedia(item.id, { ...item, overviewBlob, resultBlob }).catch(() => {});
           }
         }
         hydrated[item.id] = {
           ...item,
           overviewBlob,
+          resultBlob,
           videoUrl: item.videoBlob ? URL.createObjectURL(item.videoBlob) : null,
           overviewUrl: overviewBlob ? URL.createObjectURL(overviewBlob) : null,
-          resultUrl: item.resultBlob ? URL.createObjectURL(item.resultBlob) : null,
+          resultUrl: resultBlob ? URL.createObjectURL(resultBlob) : null,
         };
       }
       setMedia(hydrated);
@@ -259,27 +290,7 @@ export default function App() {
   async function markResult(id, result) {
     const project = projects.find((currentProject) => currentProject.id === id);
     if (!project) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1920;
-    renderCanvas(canvas.getContext('2d'), PREVIEW_T, project);
-    const context = canvas.getContext('2d');
-    if (result === 'hit') {
-      drawWinnerStamp(context, canvas.width);
-    } else {
-      context.save();
-      context.translate(540, 960);
-      context.rotate(-Math.atan2(1920, 1080));
-      context.fillStyle = 'rgba(190, 56, 61, 0.88)';
-      context.fillRect(-1000, -90, 2000, 180);
-      context.fillStyle = '#F4F2E8';
-      context.font = '700 92px Oswald';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText('MISS', 0, 0);
-      context.restore();
-    }
-    const resultBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    const resultBlob = await generateResultBlob(project, result);
     if (!resultBlob) return;
     const oldMedia = media[id];
     if (oldMedia?.resultUrl) URL.revokeObjectURL(oldMedia.resultUrl);
