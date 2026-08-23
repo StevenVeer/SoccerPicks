@@ -626,7 +626,7 @@ export default function App() {
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
-                    {copiedDescriptionId === p.id ? 'Copied' : p.result ? 'Copy caption' : 'Copy'}
+                    {copiedDescriptionId === p.id ? 'Copied' : p.result ? 'Copy caption' : 'Copy description'}
                   </button>
                 )}
                 <button type="button" className="posted-button" onClick={() => openPostingDate(p.id)} disabled={p.status === 'posted'}>
