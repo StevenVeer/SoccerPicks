@@ -47,7 +47,6 @@ const LEAGUES = [
   { key: 'soccer_mexico_ligamx', name: 'Liga MX', country: 'Mexico', tier: 'other' },
   { key: 'soccer_brazil_campeonato', name: 'Brasileirão', country: 'Brazil', tier: 'other' },
   { key: 'soccer_argentina_primera_division', name: 'Primera División', country: 'Argentina', tier: 'other' },
-  { key: 'soccer_saudi_pro_league', name: 'Saudi Pro League', country: 'Saudi Arabia', tier: 'other' },
   { key: 'soccer_australia_aleague', name: 'A-League', country: 'Australia', tier: 'other' },
 
   // More European cups — key names are our best guess and unverified against
