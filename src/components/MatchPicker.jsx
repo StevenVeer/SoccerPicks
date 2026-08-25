@@ -1,5 +1,39 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { buildPickGroups } from '../lib/pickTemplates';
+
+const EUROPEAN_COUNTRIES = new Set([
+  'England', 'Spain', 'Germany', 'Italy', 'France', 'Netherlands',
+  'Portugal', 'Sweden', 'Norway', 'Scotland', 'Belgium', 'Denmark', 'Turkey', 'Europe',
+]);
+
+const COUNTRY_CODES = {
+  Portugal: 'PT', Sweden: 'SE', Norway: 'NO', Scotland: 'SC', Belgium: 'BE',
+  Denmark: 'DK', Turkey: 'TR', USA: 'US', Mexico: 'MX', Brazil: 'BR',
+  Argentina: 'AR', 'Saudi Arabia': 'SA', Australia: 'AU',
+};
+
+function countryLabel(country) {
+  return country === 'International' ? 'Internationale toernooien' : country;
+}
+
+function groupByCountry(otherLeagues) {
+  const order = [];
+  const byCountry = new Map();
+  otherLeagues.forEach((league) => {
+    if (!byCountry.has(league.country)) {
+      byCountry.set(league.country, []);
+      order.push(league.country);
+    }
+    byCountry.get(league.country).push(league);
+  });
+  const europe = [];
+  const world = [];
+  order.forEach((country) => {
+    const target = country !== 'International' && EUROPEAN_COUNTRIES.has(country) ? europe : world;
+    target.push({ country, leagues: byCountry.get(country) });
+  });
+  return { europe, world };
+}
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
@@ -41,14 +75,34 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [matches, setMatches] = useState([]);
   const [leagues, setLeagues] = useState([]);
-  const [leagueId, setLeagueId] = useState('all');
+  const [leagueId, setLeagueId] = useState('top');
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(`${date}T12:00:00Z`));
   const [open, setOpen] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const bodyId = useId();
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,13 +158,19 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
 
   const visibleMatches = leagueId === 'all'
     ? matches
-    : matches.filter((match) => match.league === leagueId);
+    : leagueId === 'top'
+      ? matches.filter((match) => match.tier === 'top')
+      : matches.filter((match) => match.league === leagueId);
   const groupedMatches = leagues
     .map((league) => ({
       ...league,
       matches: visibleMatches.filter((match) => match.league === league.name),
     }))
     .filter((league) => league.matches.length > 0);
+  const topLeagues = leagues.filter((league) => league.tier === 'top');
+  const otherLeagues = leagues.filter((league) => league.tier !== 'top');
+  const { europe: europeGroups, world: worldGroups } = groupByCountry(otherLeagues);
+  const leagueLabel = leagueId === 'top' ? 'Top competities' : leagueId === 'all' ? 'Alle competities' : leagueId;
   const today = new Date().toISOString().slice(0, 10);
   const quickDates = [today, shiftDate(today, 1)];
   const days = calendarDays(calendarMonth);
@@ -126,6 +186,46 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
     setLeagueId(nextLeague);
     setSelectedMatch(null);
     setError('');
+    setMenuOpen(false);
+  }
+
+  function renderCountryGroup(group) {
+    if (group.leagues.length === 1) {
+      const league = group.leagues[0];
+      const code = COUNTRY_CODES[group.country];
+      return (
+        <button
+          type="button"
+          key={group.country}
+          className={`menu-row${leagueId === league.name ? ' selected' : ''}`}
+          onClick={() => changeLeague(league.name)}
+        >
+          <span>{league.name}</span>
+          {code && <span className="badge">{code}</span>}
+        </button>
+      );
+    }
+    return (
+      <details className="country-group" key={group.country}>
+        <summary>
+          <span className="caret" aria-hidden="true">▸</span>
+          <span>{countryLabel(group.country)}</span>
+          <span className="count">{group.leagues.length}</span>
+        </summary>
+        <div className="country-leagues">
+          {group.leagues.map((league) => (
+            <button
+              type="button"
+              key={league.id}
+              className={`menu-row${leagueId === league.name ? ' selected' : ''}`}
+              onClick={() => changeLeague(league.name)}
+            >
+              {league.name}
+            </button>
+          ))}
+        </div>
+      </details>
+    );
   }
 
   return (
@@ -201,11 +301,41 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                 </button>
               ))}
             </div>
-            <div className="competition-select">
-              <select value={leagueId} onChange={(event) => changeLeague(event.target.value)} aria-label="Competition filter">
-                <option value="all">All competitions</option>
-                {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
-              </select>
+            <div className="competition-menu" ref={menuRef}>
+              <button
+                type="button"
+                className="menu-trigger"
+                aria-haspopup="true"
+                aria-expanded={menuOpen}
+                aria-label="Competition filter"
+                onClick={() => setMenuOpen((isOpen) => !isOpen)}
+              >
+                {leagueLabel}
+              </button>
+              {menuOpen && (
+                <div className="menu-popover" role="menu">
+                  <button type="button" className={`menu-row${leagueId === 'top' ? ' selected' : ''}`} onClick={() => changeLeague('top')}>
+                    Top competities
+                  </button>
+                  <button type="button" className={`menu-row${leagueId === 'all' ? ' selected' : ''}`} onClick={() => changeLeague('all')}>
+                    Alle competities
+                  </button>
+                  {topLeagues.map((league) => (
+                    <button
+                      type="button"
+                      key={league.id}
+                      className={`menu-row${leagueId === league.name ? ' selected' : ''}`}
+                      onClick={() => changeLeague(league.name)}
+                    >
+                      {league.name}
+                    </button>
+                  ))}
+                  {europeGroups.length > 0 && <div className="menu-group-label">Europa</div>}
+                  {europeGroups.map((group) => renderCountryGroup(group))}
+                  {worldGroups.length > 0 && <div className="menu-group-label">Buiten Europa</div>}
+                  {worldGroups.map((group) => renderCountryGroup(group))}
+                </div>
+              )}
             </div>
             <span className="data-note">{matches.length} matches</span>
           </div>

@@ -16,15 +16,54 @@ const VIDEO_DIR = process.env.VIDEO_DIR || '/data/videos';
 app.use(cors());
 
 const LEAGUES = [
-  { key: 'soccer_epl', name: 'Premier League', country: 'England' },
-  { key: 'soccer_spain_la_liga', name: 'La Liga', country: 'Spain' },
-  { key: 'soccer_italy_serie_a', name: 'Serie A', country: 'Italy' },
-  { key: 'soccer_germany_bundesliga', name: 'Bundesliga', country: 'Germany' },
-  { key: 'soccer_france_ligue_one', name: 'Ligue 1', country: 'France' },
-  { key: 'soccer_netherlands_eredivisie', name: 'Eredivisie', country: 'Netherlands' },
-  { key: 'soccer_portugal_primeira_liga', name: 'Primeira Liga', country: 'Portugal' },
-  { key: 'soccer_sweden_allsvenskan', name: 'Allsvenskan', country: 'Sweden' },
-  { key: 'soccer_norway_eliteserien', name: 'Eliteserien', country: 'Norway' },
+  // Top competitions — shown first and selected by default.
+  { key: 'soccer_epl', name: 'Premier League', country: 'England', tier: 'top' },
+  { key: 'soccer_spain_la_liga', name: 'La Liga', country: 'Spain', tier: 'top' },
+  { key: 'soccer_germany_bundesliga', name: 'Bundesliga', country: 'Germany', tier: 'top' },
+  { key: 'soccer_italy_serie_a', name: 'Serie A', country: 'Italy', tier: 'top' },
+  { key: 'soccer_france_ligue_one', name: 'Ligue 1', country: 'France', tier: 'top' },
+  { key: 'soccer_netherlands_eredivisie', name: 'Eredivisie', country: 'Netherlands', tier: 'top' },
+  { key: 'soccer_uefa_champs_league', name: 'Champions League', country: 'Europe', tier: 'top' },
+  { key: 'soccer_uefa_europa_league', name: 'Europa League', country: 'Europe', tier: 'top' },
+
+  // Other competitions — collapsed under "Overige competities" in the UI.
+  { key: 'soccer_uefa_europa_conference_league', name: 'Conference League', country: 'Europe', tier: 'other' },
+  { key: 'soccer_portugal_primeira_liga', name: 'Primeira Liga', country: 'Portugal', tier: 'other' },
+  { key: 'soccer_sweden_allsvenskan', name: 'Allsvenskan', country: 'Sweden', tier: 'other' },
+  { key: 'soccer_norway_eliteserien', name: 'Eliteserien', country: 'Norway', tier: 'other' },
+  { key: 'soccer_efl_champ', name: 'Championship', country: 'England', tier: 'other' },
+  { key: 'soccer_england_league1', name: 'League One', country: 'England', tier: 'other' },
+  { key: 'soccer_england_league2', name: 'League Two', country: 'England', tier: 'other' },
+  { key: 'soccer_fa_cup', name: 'FA Cup', country: 'England', tier: 'other' },
+  { key: 'soccer_italy_serie_b', name: 'Serie B', country: 'Italy', tier: 'other' },
+  { key: 'soccer_germany_bundesliga2', name: '2. Bundesliga', country: 'Germany', tier: 'other' },
+  { key: 'soccer_france_ligue_two', name: 'Ligue 2', country: 'France', tier: 'other' },
+  { key: 'soccer_spain_segunda_division', name: 'La Liga 2', country: 'Spain', tier: 'other' },
+  { key: 'soccer_spl', name: 'Scottish Premiership', country: 'Scotland', tier: 'other' },
+  { key: 'soccer_belgium_first_div', name: 'Pro League', country: 'Belgium', tier: 'other' },
+  { key: 'soccer_denmark_superliga', name: 'Superliga', country: 'Denmark', tier: 'other' },
+  { key: 'soccer_turkey_super_league', name: 'Süper Lig', country: 'Turkey', tier: 'other' },
+  { key: 'soccer_usa_mls', name: 'MLS', country: 'USA', tier: 'other' },
+  { key: 'soccer_mexico_ligamx', name: 'Liga MX', country: 'Mexico', tier: 'other' },
+  { key: 'soccer_brazil_campeonato', name: 'Brasileirão', country: 'Brazil', tier: 'other' },
+  { key: 'soccer_argentina_primera_division', name: 'Primera División', country: 'Argentina', tier: 'other' },
+  { key: 'soccer_saudi_pro_league', name: 'Saudi Pro League', country: 'Saudi Arabia', tier: 'other' },
+  { key: 'soccer_australia_aleague', name: 'A-League', country: 'Australia', tier: 'other' },
+
+  // More European cups — key names are our best guess and unverified against
+  // a live API response; drop any that turn out not to exist.
+  { key: 'soccer_germany_dfb_pokal', name: 'DFB-Pokal', country: 'Germany', tier: 'other' },
+  { key: 'soccer_spain_copa_del_rey', name: 'Copa del Rey', country: 'Spain', tier: 'other' },
+  { key: 'soccer_italy_coppa_italia', name: 'Coppa Italia', country: 'Italy', tier: 'other' },
+  { key: 'soccer_france_coupe_de_france', name: 'Coupe de France', country: 'France', tier: 'other' },
+
+  // International tournaments — same caveat; some are also only active
+  // (return matches) during the tournament window itself.
+  { key: 'soccer_fifa_world_cup', name: 'WK', country: 'International', tier: 'other' },
+  { key: 'soccer_uefa_european_championship', name: 'EK', country: 'International', tier: 'other' },
+  { key: 'soccer_uefa_nations_league', name: 'UEFA Nations League', country: 'International', tier: 'other' },
+  { key: 'soccer_conmebol_copa_america', name: 'Copa América', country: 'International', tier: 'other' },
+  { key: 'soccer_africa_cup_of_nations', name: 'Africa Cup of Nations', country: 'International', tier: 'other' },
 ];
 
 const matchesCache = new Map();
@@ -49,6 +88,7 @@ function normalizeMatch(event, league) {
     away: event.away_team,
     league: league.name,
     country: league.country,
+    tier: league.tier,
   };
 }
 
