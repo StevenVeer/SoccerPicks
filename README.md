@@ -2,7 +2,7 @@
 
 React (Vite) dashboard om TikTok-video's te maken voor soccer picks. Je typt per video een titel, account-handle, disclaimer en een lijst wedstrijden/picks/odds in; de app tekent daar live een 9:16 "ticket"-preview van en kan er een `.webm`-video van opnemen, met de gecombineerde odds (parlay) onderaan.
 
-Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds); de odds zelf typ je zelf in, gebaseerd op een vaste lijst standaardpicks. Bij elke pick worden ook de teamlogo's opgehaald (via TheSportsDB, met de gratis test-key als default) en in het ticket getekend naast de teamnamen; ontbreekt een logo, dan valt de tekst gewoon terug op alleen de teamnaam.
+Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds). Odds typ je zelf in, of je klikt bij een gekozen wedstrijd op **Request live odds** om de echte quotes op te halen bij The Odds API — dat kost credits (gratis quotum is 500/maand), dus dat gebeurt alleen op eigen initiatief. Eén klik haalt in één API-call de odds op van *alle* wedstrijden van die competitie op die dag (de kosten zijn markets × regions, niet per wedstrijd), en het resultaat wordt 10 minuten gecachet zodat je niet twee keer betaalt voor dezelfde wedstrijddag. Boven de wedstrijdenlijst zie je hoeveel credits er nog over zijn, en na elke live-opvraag hoeveel die specifieke klik heeft gekost. Bij elke pick worden ook de teamlogo's opgehaald (via TheSportsDB, met de gratis test-key als default) en in het ticket getekend naast de teamnamen; ontbreekt een logo, dan valt de tekst gewoon terug op alleen de teamnaam.
 
 Je kunt meerdere video's tegelijk beheren — elk met eigen picks — en ze allemaal in één keer genereren en als zip downloaden.
 
@@ -43,7 +43,7 @@ npm run preview
 
 1. Klik op **+ Nieuwe video** om een extra videoproject toe te voegen (of **⧉** op een bestaand project om het te dupliceren).
 2. Kies in de wedstrijdenlijst een datum en een wedstrijd (deze worden automatisch opgehaald, zonder odds).
-3. Kies uit de 14 standaardpicks (bv. "Thuisteam wint", "Onder 2.5 doelpunten") en vul zelf de odds in die je ergens hebt opgezocht.
+3. Klik eventueel op **Request live odds** om de echte quotes voor die competitie/dag op te halen (kost credits), of kies uit de 14 standaardpicks (bv. "Thuisteam wint", "Onder 2.5 doelpunten") en vul zelf de odds in die je ergens hebt opgezocht.
 4. Vul per project account en disclaimer in — max. 8 picks per video.
 5. Klik op **Video genereren** per project, of op **Genereer alle video's** om ze allemaal tegelijk op te nemen.
 6. Download losse video's via de knop onder de preview, of alles ineens via **Download alles (.zip)**.
@@ -66,7 +66,7 @@ src/
     teamCrests.js               – haalt en cachet teamlogo's op voor gebruik in de canvas
     archive.js                 – stuurt project + media naar de eigen archief-API (faalt stil)
 server/
-  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`), teamlogo-proxy (`/api/teams/crest`) en archief (`/api/archive`)
+  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`), live-odds-proxy (`/api/football/odds`, `/api/football/credits`), teamlogo-proxy (`/api/teams/crest`) en archief (`/api/archive`)
   db.js                        – Postgres-connectiepool
 ```
 

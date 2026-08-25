@@ -70,9 +70,23 @@ const matchesCache = new Map();
 const MATCH_CACHE_MS = 6 * 60 * 60 * 1000;
 const CACHE_ENTRY_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
 
+// The Odds API reports remaining/used quota via response headers on every
+// call that touches paid endpoints — track the last values we saw so the
+// UI can show a live credits count without spending a request just to ask.
+let lastQuota = { remaining: null, used: null, checkedAt: null };
+
 async function apiRequest(requestPath, apiKey) {
   const separator = requestPath.includes('?') ? '&' : '?';
   const response = await fetch(`https://api.the-odds-api.com/v4${requestPath}${separator}apiKey=${encodeURIComponent(apiKey)}`);
+  const remaining = response.headers.get('x-requests-remaining');
+  const used = response.headers.get('x-requests-used');
+  if (remaining !== null || used !== null) {
+    lastQuota = {
+      remaining: remaining !== null ? Number(remaining) : lastQuota.remaining,
+      used: used !== null ? Number(used) : lastQuota.used,
+      checkedAt: new Date().toISOString(),
+    };
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || `The Odds API returned ${response.status}`);
   return data;
@@ -211,6 +225,109 @@ app.get('/api/football/matches', async (req, res) => {
   } catch (error) {
     res.status(502).json({ error: error.message });
   }
+});
+
+// One call to /odds returns prices for every match of that league on that
+// day at once — the credit cost is markets × regions, not per match, so a
+// single click here already covers the whole matchday for that league.
+const ODDS_MARKETS = 'h2h,totals,btts,double_chance';
+const ODDS_REGION = 'eu';
+const oddsCache = new Map();
+const ODDS_CACHE_MS = 10 * 60 * 1000;
+
+function pruneExpiredOddsCache() {
+  const now = Date.now();
+  for (const [key, entry] of oddsCache) {
+    if (entry.expiresAt <= now) oddsCache.delete(key);
+  }
+}
+
+// Maps a bookmaker's markets onto the option keys used by pickTemplates.js
+// (home_win, draw, away_win, double_1x/12/x2, btts_yes/no, over_/under_<line>).
+function extractOutcomePrices(event) {
+  const bookmaker = event.bookmakers?.[0];
+  const prices = {};
+  if (!bookmaker) return prices;
+
+  for (const market of bookmaker.markets || []) {
+    if (market.key === 'h2h') {
+      for (const outcome of market.outcomes || []) {
+        if (outcome.name === event.home_team) prices.home_win = outcome.price;
+        else if (outcome.name === event.away_team) prices.away_win = outcome.price;
+        else if (outcome.name === 'Draw') prices.draw = outcome.price;
+      }
+    } else if (market.key === 'btts') {
+      for (const outcome of market.outcomes || []) {
+        if (outcome.name === 'Yes') prices.btts_yes = outcome.price;
+        else if (outcome.name === 'No') prices.btts_no = outcome.price;
+      }
+    } else if (market.key === 'double_chance') {
+      for (const outcome of market.outcomes || []) {
+        const hasHome = outcome.name.includes(event.home_team);
+        const hasAway = outcome.name.includes(event.away_team);
+        const hasDraw = /draw/i.test(outcome.name);
+        if (hasHome && hasDraw) prices.double_1x = outcome.price;
+        else if (hasAway && hasDraw) prices.double_x2 = outcome.price;
+        else if (hasHome && hasAway) prices.double_12 = outcome.price;
+      }
+    } else if (market.key === 'totals') {
+      for (const outcome of market.outcomes || []) {
+        if (outcome.point === undefined) continue;
+        const lineKey = String(outcome.point).replace('.', '_');
+        if (/^over$/i.test(outcome.name)) prices[`over_${lineKey}`] = outcome.price;
+        else if (/^under$/i.test(outcome.name)) prices[`under_${lineKey}`] = outcome.price;
+      }
+    }
+  }
+  return prices;
+}
+
+app.get('/api/football/odds', async (req, res) => {
+  const apiKey = process.env.ODDS_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: 'ODDS_API_KEY is missing' });
+    return;
+  }
+
+  const league = LEAGUES.find((candidate) => candidate.key === req.query.league);
+  if (!league) {
+    res.status(400).json({ error: 'Unknown league' });
+    return;
+  }
+
+  try {
+    pruneExpiredOddsCache();
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const cacheKey = `${league.key}:${date}`;
+    const cached = oddsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      res.json({ events: cached.value, quota: lastQuota, cost: 0, cached: true });
+      return;
+    }
+
+    const usedBefore = lastQuota.used;
+    const bounds = dateBounds(date);
+    const query = `?regions=${ODDS_REGION}&markets=${ODDS_MARKETS}&oddsFormat=decimal&dateFormat=iso` +
+      `&commenceTimeFrom=${encodeURIComponent(bounds.from)}&commenceTimeTo=${encodeURIComponent(bounds.to)}`;
+    const events = await apiRequest(`/sports/${league.key}/odds${query}`, apiKey);
+
+    const value = events.map((event) => ({
+      id: event.id,
+      home: event.home_team,
+      away: event.away_team,
+      bookmaker: event.bookmakers?.[0]?.title || null,
+      prices: extractOutcomePrices(event),
+    }));
+    oddsCache.set(cacheKey, { value, expiresAt: Date.now() + ODDS_CACHE_MS });
+    const cost = usedBefore !== null && lastQuota.used !== null ? lastQuota.used - usedBefore : null;
+    res.json({ events: value, quota: lastQuota, cost, cached: false });
+  } catch (error) {
+    res.status(502).json({ error: error.message, quota: lastQuota });
+  }
+});
+
+app.get('/api/football/credits', (req, res) => {
+  res.json(lastQuota);
 });
 
 function parseBoolean(value) {
