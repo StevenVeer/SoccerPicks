@@ -230,16 +230,26 @@ app.get('/api/football/matches', async (req, res) => {
 // One call to /odds returns prices for every match of that league on that
 // day at once — the credit cost is markets × regions, not per match, so a
 // single click here already covers the whole matchday for that league.
+// Fetched odds are kept in Postgres (not just in-memory) so a re-deploy or
+// container restart doesn't throw away odds we already paid credits for.
 const ODDS_MARKETS = 'h2h,totals,btts,double_chance';
 const ODDS_REGION = 'eu';
-const oddsCache = new Map();
-const ODDS_CACHE_MS = 10 * 60 * 1000;
+const ODDS_CACHE_MS = 24 * 60 * 60 * 1000; // at least a day
 
-function pruneExpiredOddsCache() {
-  const now = Date.now();
-  for (const [key, entry] of oddsCache) {
-    if (entry.expiresAt <= now) oddsCache.delete(key);
+let oddsCacheTableReady = null;
+function ensureOddsCacheTable() {
+  if (!oddsCacheTableReady) {
+    oddsCacheTableReady = pool.query(`
+      create table if not exists odds_cache (
+        cache_key text primary key,
+        league_key text not null,
+        date date not null,
+        payload jsonb not null,
+        fetched_at timestamptz not null default now()
+      )
+    `);
   }
+  return oddsCacheTableReady;
 }
 
 // Maps a bookmaker's markets onto the option keys used by pickTemplates.js
@@ -296,12 +306,17 @@ app.get('/api/football/odds', async (req, res) => {
   }
 
   try {
-    pruneExpiredOddsCache();
+    await ensureOddsCacheTable();
     const date = req.query.date || new Date().toISOString().slice(0, 10);
     const cacheKey = `${league.key}:${date}`;
-    const cached = oddsCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      res.json({ events: cached.value, quota: lastQuota, cost: 0, cached: true });
+
+    const { rows } = await pool.query(
+      'select payload, fetched_at from odds_cache where cache_key = $1',
+      [cacheKey]
+    );
+    const cached = rows[0];
+    if (cached && Date.now() - new Date(cached.fetched_at).getTime() < ODDS_CACHE_MS) {
+      res.json({ events: cached.payload, quota: lastQuota, cost: 0, cached: true });
       return;
     }
 
@@ -318,7 +333,12 @@ app.get('/api/football/odds', async (req, res) => {
       bookmaker: event.bookmakers?.[0]?.title || null,
       prices: extractOutcomePrices(event),
     }));
-    oddsCache.set(cacheKey, { value, expiresAt: Date.now() + ODDS_CACHE_MS });
+    await pool.query(
+      `insert into odds_cache (cache_key, league_key, date, payload, fetched_at)
+       values ($1, $2, $3, $4, now())
+       on conflict (cache_key) do update set payload = excluded.payload, fetched_at = excluded.fetched_at`,
+      [cacheKey, league.key, date, JSON.stringify(value)]
+    );
     const cost = usedBefore !== null && lastQuota.used !== null ? lastQuota.used - usedBefore : null;
     res.json({ events: value, quota: lastQuota, cost, cached: false });
   } catch (error) {

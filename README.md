@@ -2,7 +2,7 @@
 
 React (Vite) dashboard om TikTok-video's te maken voor soccer picks. Je typt per video een titel, account-handle, disclaimer en een lijst wedstrijden/picks/odds in; de app tekent daar live een 9:16 "ticket"-preview van en kan er een `.webm`-video van opnemen, met de gecombineerde odds (parlay) onderaan.
 
-Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds). Odds typ je zelf in, of je klikt bij een gekozen wedstrijd op **Request live odds** om de echte quotes op te halen bij The Odds API — dat kost credits (gratis quotum is 500/maand), dus dat gebeurt alleen op eigen initiatief. Eén klik haalt in één API-call de odds op van *alle* wedstrijden van die competitie op die dag (de kosten zijn markets × regions, niet per wedstrijd), en het resultaat wordt 10 minuten gecachet zodat je niet twee keer betaalt voor dezelfde wedstrijddag. Boven de wedstrijdenlijst zie je hoeveel credits er nog over zijn, en na elke live-opvraag hoeveel die specifieke klik heeft gekost. Bij elke pick worden ook de teamlogo's opgehaald (via TheSportsDB, met de gratis test-key als default) en in het ticket getekend naast de teamnamen; ontbreekt een logo, dan valt de tekst gewoon terug op alleen de teamnaam.
+Wedstrijden worden automatisch opgehaald (gratis endpoint, geen odds). Odds typ je zelf in, of je klikt bij een gekozen wedstrijd op **Request live odds** om de echte quotes op te halen bij The Odds API — dat kost credits (gratis quotum is 500/maand), dus dat gebeurt alleen op eigen initiatief. Eén klik haalt in één API-call de odds op van *alle* wedstrijden van die competitie op die dag (de kosten zijn markets × regions, niet per wedstrijd), en het resultaat wordt minimaal 24 uur in de Postgres-database bewaard (niet alleen in het geheugen) zodat je niet twee keer betaalt voor dezelfde wedstrijddag — ook niet na een herstart van de containers. Boven de wedstrijdenlijst zie je hoeveel credits er nog over zijn, en na elke live-opvraag hoeveel die specifieke klik heeft gekost. Bij elke pick worden ook de teamlogo's opgehaald (via TheSportsDB, met de gratis test-key als default) en in het ticket getekend naast de teamnamen; ontbreekt een logo, dan valt de tekst gewoon terug op alleen de teamnaam.
 
 Je kunt meerdere video's tegelijk beheren — elk met eigen picks — en ze allemaal in één keer genereren en als zip downloaden.
 
@@ -66,7 +66,7 @@ src/
     teamCrests.js               – haalt en cachet teamlogo's op voor gebruik in de canvas
     archive.js                 – stuurt project + media naar de eigen archief-API (faalt stil)
 server/
-  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`), live-odds-proxy (`/api/football/odds`, `/api/football/credits`), teamlogo-proxy (`/api/teams/crest`) en archief (`/api/archive`)
+  index.js                    – Express-API: wedstrijden-proxy (`/api/football/matches`), live-odds-proxy (`/api/football/odds`, `/api/football/credits`, bewaart resultaten zelf in de `odds_cache`-tabel die de app bij de eerste aanvraag aanmaakt), teamlogo-proxy (`/api/teams/crest`) en archief (`/api/archive`)
   db.js                        – Postgres-connectiepool
 ```
 
