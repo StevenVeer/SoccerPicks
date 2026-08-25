@@ -70,9 +70,23 @@ const matchesCache = new Map();
 const MATCH_CACHE_MS = 6 * 60 * 60 * 1000;
 const CACHE_ENTRY_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
 
+// The Odds API reports remaining/used quota via response headers on every
+// call that touches paid endpoints — track the last values we saw so the
+// UI can show a live credits count without spending a request just to ask.
+let lastQuota = { remaining: null, used: null, checkedAt: null };
+
 async function apiRequest(requestPath, apiKey) {
   const separator = requestPath.includes('?') ? '&' : '?';
   const response = await fetch(`https://api.the-odds-api.com/v4${requestPath}${separator}apiKey=${encodeURIComponent(apiKey)}`);
+  const remaining = response.headers.get('x-requests-remaining');
+  const used = response.headers.get('x-requests-used');
+  if (remaining !== null || used !== null) {
+    lastQuota = {
+      remaining: remaining !== null ? Number(remaining) : lastQuota.remaining,
+      used: used !== null ? Number(used) : lastQuota.used,
+      checkedAt: new Date().toISOString(),
+    };
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || `The Odds API returned ${response.status}`);
   return data;
@@ -211,6 +225,149 @@ app.get('/api/football/matches', async (req, res) => {
   } catch (error) {
     res.status(502).json({ error: error.message });
   }
+});
+
+// One call to /odds returns prices for every match of that league on that
+// day at once — the credit cost is markets × regions, not per match, so a
+// single click here already covers the whole matchday for that league.
+// Fetched odds are kept in Postgres (not just in-memory) so a re-deploy or
+// container restart doesn't throw away odds we already paid credits for.
+//
+// A match's odds stop being fetchable at all once it has kicked off — the
+// API only lists upcoming events — so there's no point treating a row as
+// "fresh" (or keeping it around) past its actual last kickoff time plus a
+// buffer for that match to finish. One row covers a whole league/date, so
+// that cutoff is the latest commence_time among the events it holds, not
+// an assumed end of the calendar day.
+const ODDS_MARKETS = 'h2h,totals,btts,double_chance';
+const ODDS_REGION = 'eu';
+const MATCH_FINISH_BUFFER_MS = 3 * 60 * 60 * 1000;
+
+let oddsCacheTableReady = null;
+function ensureOddsCacheTable() {
+  if (!oddsCacheTableReady) {
+    oddsCacheTableReady = pool.query(`
+      create table if not exists odds_cache (
+        cache_key text primary key,
+        league_key text not null,
+        date date not null,
+        payload jsonb not null,
+        fetched_at timestamptz not null default now(),
+        valid_until timestamptz not null
+      )
+    `);
+  }
+  return oddsCacheTableReady;
+}
+
+function pruneExpiredOddsCache() {
+  return pool.query('delete from odds_cache where valid_until < now()');
+}
+
+// Maps a bookmaker's markets onto the option keys used by pickTemplates.js
+// (home_win, draw, away_win, double_1x/12/x2, btts_yes/no, over_/under_<line>).
+function extractOutcomePrices(event) {
+  const bookmaker = event.bookmakers?.[0];
+  const prices = {};
+  if (!bookmaker) return prices;
+
+  for (const market of bookmaker.markets || []) {
+    if (market.key === 'h2h') {
+      for (const outcome of market.outcomes || []) {
+        if (outcome.name === event.home_team) prices.home_win = outcome.price;
+        else if (outcome.name === event.away_team) prices.away_win = outcome.price;
+        else if (outcome.name === 'Draw') prices.draw = outcome.price;
+      }
+    } else if (market.key === 'btts') {
+      for (const outcome of market.outcomes || []) {
+        if (outcome.name === 'Yes') prices.btts_yes = outcome.price;
+        else if (outcome.name === 'No') prices.btts_no = outcome.price;
+      }
+    } else if (market.key === 'double_chance') {
+      for (const outcome of market.outcomes || []) {
+        const hasHome = outcome.name.includes(event.home_team);
+        const hasAway = outcome.name.includes(event.away_team);
+        const hasDraw = /draw/i.test(outcome.name);
+        if (hasHome && hasDraw) prices.double_1x = outcome.price;
+        else if (hasAway && hasDraw) prices.double_x2 = outcome.price;
+        else if (hasHome && hasAway) prices.double_12 = outcome.price;
+      }
+    } else if (market.key === 'totals') {
+      for (const outcome of market.outcomes || []) {
+        if (outcome.point === undefined) continue;
+        const lineKey = String(outcome.point).replace('.', '_');
+        if (/^over$/i.test(outcome.name)) prices[`over_${lineKey}`] = outcome.price;
+        else if (/^under$/i.test(outcome.name)) prices[`under_${lineKey}`] = outcome.price;
+      }
+    }
+  }
+  return prices;
+}
+
+app.get('/api/football/odds', async (req, res) => {
+  const apiKey = process.env.ODDS_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: 'ODDS_API_KEY is missing' });
+    return;
+  }
+
+  const league = LEAGUES.find((candidate) => candidate.key === req.query.league);
+  if (!league) {
+    res.status(400).json({ error: 'Unknown league' });
+    return;
+  }
+
+  try {
+    await ensureOddsCacheTable();
+    await pruneExpiredOddsCache();
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const cacheKey = `${league.key}:${date}`;
+
+    const { rows } = await pool.query(
+      'select payload from odds_cache where cache_key = $1 and valid_until > now()',
+      [cacheKey]
+    );
+    const cached = rows[0];
+    if (cached) {
+      res.json({ events: cached.payload, quota: lastQuota, cost: 0, cached: true });
+      return;
+    }
+
+    const usedBefore = lastQuota.used;
+    const bounds = dateBounds(date);
+    const query = `?regions=${ODDS_REGION}&markets=${ODDS_MARKETS}&oddsFormat=decimal&dateFormat=iso` +
+      `&commenceTimeFrom=${encodeURIComponent(bounds.from)}&commenceTimeTo=${encodeURIComponent(bounds.to)}`;
+    const events = await apiRequest(`/sports/${league.key}/odds${query}`, apiKey);
+
+    const value = events.map((event) => ({
+      id: event.id,
+      home: event.home_team,
+      away: event.away_team,
+      bookmaker: event.bookmakers?.[0]?.title || null,
+      prices: extractOutcomePrices(event),
+    }));
+    // No events for this date (e.g. an off day) means there's nothing with a
+    // real kickoff time to key off — fall back to the end of the requested
+    // date so we don't just refetch on every click.
+    const lastKickoffMs = events.length > 0
+      ? Math.max(...events.map((event) => new Date(event.commence_time).getTime()))
+      : new Date(bounds.to).getTime();
+    const validUntil = new Date(lastKickoffMs + MATCH_FINISH_BUFFER_MS);
+    await pool.query(
+      `insert into odds_cache (cache_key, league_key, date, payload, fetched_at, valid_until)
+       values ($1, $2, $3, $4, now(), $5)
+       on conflict (cache_key) do update set payload = excluded.payload, fetched_at = excluded.fetched_at, valid_until = excluded.valid_until`,
+      [cacheKey, league.key, date, JSON.stringify(value), validUntil]
+    );
+    const cost = usedBefore !== null && lastQuota.used !== null ? lastQuota.used - usedBefore : null;
+    res.json({ events: value, quota: lastQuota, cost, cached: false });
+  } catch (error) {
+    res.status(502).json({ error: error.message, quota: lastQuota });
+  }
+});
+
+app.get('/api/football/credits', (req, res) => {
+  res.json(lastQuota);
 });
 
 function parseBoolean(value) {

@@ -83,6 +83,11 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(`${date}T12:00:00Z`));
   const [open, setOpen] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [quota, setQuota] = useState(null);
+  const [oddsByLeagueDate, setOddsByLeagueDate] = useState({});
+  const [oddsLoading, setOddsLoading] = useState(false);
+  const [oddsError, setOddsError] = useState('');
+  const [lastOddsCost, setLastOddsCost] = useState(null);
   const bodyId = useId();
   const menuRef = useRef(null);
 
@@ -103,6 +108,19 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/football/credits')
+      .then((response) => response.json())
+      .then((data) => {
+        if (!cancelled) setQuota(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,11 +167,32 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   }
 
   function togglePick(option) {
+    const price = matchPrices?.[option.key];
     onAddPick({
       match: `${selectedMatch.home} - ${selectedMatch.away}`,
       pick: option.label,
-      odds: 1.01,
+      odds: price ?? 1.01,
     });
+  }
+
+  function fetchOdds() {
+    if (!selectedMatch) return;
+    const cacheKey = `${selectedMatch.sportKey}:${date}`;
+    setOddsLoading(true);
+    setOddsError('');
+    fetch(`/api/football/odds?date=${date}&league=${selectedMatch.sportKey}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Odds could not be loaded.');
+        return data;
+      })
+      .then((data) => {
+        setOddsByLeagueDate((prev) => ({ ...prev, [cacheKey]: data.events }));
+        setQuota(data.quota);
+        setLastOddsCost(data.cost);
+      })
+      .catch((fetchError) => setOddsError(fetchError.message))
+      .finally(() => setOddsLoading(false));
   }
 
   const visibleMatches = leagueId === 'all'
@@ -175,6 +214,10 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const quickDates = [today, shiftDate(today, 1)];
   const days = calendarDays(calendarMonth);
   const pickGroups = selectedMatch ? buildPickGroups(selectedMatch) : [];
+  const matchOdds = selectedMatch
+    ? oddsByLeagueDate[`${selectedMatch.sportKey}:${date}`]?.find((event) => event.id === selectedMatch.id)
+    : null;
+  const matchPrices = matchOdds?.prices || null;
 
   function chooseDate(nextDate) {
     setDate(nextDate);
@@ -234,6 +277,9 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
         <div>
           <span className="section-kicker">Live data</span>
           <h2>Choose a match</h2>
+          <span className="credits-note">
+            {quota?.remaining != null ? `${quota.remaining} odds credits left` : 'Odds credits unknown'}
+          </span>
         </div>
         <div className="match-picker-heading-actions">
           {open && (
@@ -377,7 +423,18 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                   <span className="section-kicker">Picks</span>
                   <h3>{selectedMatch.home} vs {selectedMatch.away}</h3>
                 </div>
+                <div className="odds-fetch-control">
+                  <button type="button" className="fetch-odds-button" onClick={fetchOdds} disabled={oddsLoading}>
+                    {oddsLoading ? 'Fetching…' : matchPrices ? 'Refresh odds' : 'Request live odds'}
+                  </button>
+                  {lastOddsCost != null && (
+                    <small>
+                      {lastOddsCost === 0 ? 'from cache · 0 credits' : `cost ${lastOddsCost} credit${lastOddsCost === 1 ? '' : 's'}`}
+                    </small>
+                  )}
+                </div>
               </div>
+              {oddsError && <div className="error picker-error">{oddsError}</div>}
               {pickGroups.map((group) => (
                 <div className="market" key={group.title}>
                   <b>{group.title}</b>
@@ -385,6 +442,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                     <div className="outcome-list">
                       {group.options.map((option) => {
                         const added = isOutcomeAdded(option);
+                        const price = matchPrices?.[option.key];
                         return (
                           <button
                             type="button"
@@ -394,6 +452,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                             disabled={disabled && !added}
                           >
                             <span>{option.short || option.label}</span>
+                            {price != null && <strong>{price.toFixed(2)}</strong>}
                             {added && <em>Added</em>}
                           </button>
                         );
@@ -406,6 +465,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                         <div className="goal-row" key={line}>
                           {[over, under].map((option) => {
                             const added = isOutcomeAdded(option);
+                            const price = matchPrices?.[option.key];
                             return (
                               <button
                                 type="button"
@@ -415,6 +475,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                                 disabled={disabled && !added}
                               >
                                 <span className="goal-option-label">{option.short}</span>
+                                {price != null && <strong>{price.toFixed(2)}</strong>}
                                 {added && <em>Added</em>}
                               </button>
                             );

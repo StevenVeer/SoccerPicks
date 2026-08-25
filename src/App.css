@@ -699,6 +699,41 @@ input:focus {
   font-family: 'Space Mono', monospace;
   font-size: 10px;
 }
+.credits-note {
+  display: block;
+  color: rgba(232, 178, 61, 0.6);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  margin-top: 2px;
+}
+.odds-fetch-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.fetch-odds-button {
+  background: transparent;
+  border: 1px solid rgba(232, 178, 61, 0.45);
+  border-radius: 7px;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 7px 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.fetch-odds-button:hover:not(:disabled) {
+  background: rgba(232, 178, 61, 0.16);
+  border-color: var(--gold);
+}
+.fetch-odds-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .match-groups {
   max-height: 390px;
   overflow-y: auto;
@@ -925,6 +960,12 @@ input:focus {
 }
 .goal-option-label {
   opacity: 0.75;
+}
+.goal-option strong {
+  color: var(--gold);
+}
+.goal-option:hover:not(:disabled) strong {
+  color: var(--ink);
 }
 .goal-option.added em {
   color: var(--gold);
