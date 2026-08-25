@@ -7,7 +7,7 @@ const EUROPEAN_COUNTRIES = new Set([
 ]);
 
 const COUNTRY_CODES = {
-  Portugal: 'PT', Sweden: 'SE', Norway: 'NO', Scotland: 'SC', Belgium: 'BE',
+  Netherlands: 'NL', Portugal: 'PT', Sweden: 'SE', Norway: 'NO', Scotland: 'SC', Belgium: 'BE',
   Denmark: 'DK', Turkey: 'TR', USA: 'US', Mexico: 'MX', Brazil: 'BR',
   Argentina: 'AR', 'Saudi Arabia': 'SA', Australia: 'AU',
 };
