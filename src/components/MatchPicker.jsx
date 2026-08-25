@@ -41,7 +41,7 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [matches, setMatches] = useState([]);
   const [leagues, setLeagues] = useState([]);
-  const [leagueId, setLeagueId] = useState('all');
+  const [leagueId, setLeagueId] = useState('top');
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -104,13 +104,17 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
 
   const visibleMatches = leagueId === 'all'
     ? matches
-    : matches.filter((match) => match.league === leagueId);
+    : leagueId === 'top'
+      ? matches.filter((match) => match.tier === 'top')
+      : matches.filter((match) => match.league === leagueId);
   const groupedMatches = leagues
     .map((league) => ({
       ...league,
       matches: visibleMatches.filter((match) => match.league === league.name),
     }))
     .filter((league) => league.matches.length > 0);
+  const topLeagues = leagues.filter((league) => league.tier === 'top');
+  const otherLeagues = leagues.filter((league) => league.tier !== 'top');
   const today = new Date().toISOString().slice(0, 10);
   const quickDates = [today, shiftDate(today, 1)];
   const days = calendarDays(calendarMonth);
@@ -203,8 +207,14 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
             </div>
             <div className="competition-select">
               <select value={leagueId} onChange={(event) => changeLeague(event.target.value)} aria-label="Competition filter">
-                <option value="all">All competitions</option>
-                {leagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
+                <option value="top">Top competities</option>
+                <option value="all">Alle competities</option>
+                {topLeagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
+                {otherLeagues.length > 0 && (
+                  <optgroup label="Overige competities">
+                    {otherLeagues.map((league) => <option key={league.id} value={league.name}>{league.name}</option>)}
+                  </optgroup>
+                )}
               </select>
             </div>
             <span className="data-note">{matches.length} matches</span>
