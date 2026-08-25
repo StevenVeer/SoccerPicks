@@ -47,6 +47,23 @@ const LEAGUES = [
   { key: 'soccer_mexico_ligamx', name: 'Liga MX', country: 'Mexico', tier: 'other' },
   { key: 'soccer_brazil_campeonato', name: 'Brasileirão', country: 'Brazil', tier: 'other' },
   { key: 'soccer_argentina_primera_division', name: 'Primera División', country: 'Argentina', tier: 'other' },
+  { key: 'soccer_saudi_pro_league', name: 'Saudi Pro League', country: 'Saudi Arabia', tier: 'other' },
+  { key: 'soccer_australia_aleague', name: 'A-League', country: 'Australia', tier: 'other' },
+
+  // More European cups — key names are our best guess and unverified against
+  // a live API response; drop any that turn out not to exist.
+  { key: 'soccer_germany_dfb_pokal', name: 'DFB-Pokal', country: 'Germany', tier: 'other' },
+  { key: 'soccer_spain_copa_del_rey', name: 'Copa del Rey', country: 'Spain', tier: 'other' },
+  { key: 'soccer_italy_coppa_italia', name: 'Coppa Italia', country: 'Italy', tier: 'other' },
+  { key: 'soccer_france_coupe_de_france', name: 'Coupe de France', country: 'France', tier: 'other' },
+
+  // International tournaments — same caveat; some are also only active
+  // (return matches) during the tournament window itself.
+  { key: 'soccer_fifa_world_cup', name: 'WK', country: 'International', tier: 'other' },
+  { key: 'soccer_uefa_european_championship', name: 'EK', country: 'International', tier: 'other' },
+  { key: 'soccer_uefa_nations_league', name: 'UEFA Nations League', country: 'International', tier: 'other' },
+  { key: 'soccer_conmebol_copa_america', name: 'Copa América', country: 'International', tier: 'other' },
+  { key: 'soccer_africa_cup_of_nations', name: 'Africa Cup of Nations', country: 'International', tier: 'other' },
 ];
 
 const matchesCache = new Map();
