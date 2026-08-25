@@ -194,16 +194,15 @@ app.get('/api/football/matches', async (req, res) => {
     }
 
     const bounds = dateBounds(date);
-    const results = [];
-    for (const league of LEAGUES) {
+    const results = await Promise.all(LEAGUES.map(async (league) => {
       try {
         const query = `?commenceTimeFrom=${encodeURIComponent(bounds.from)}&commenceTimeTo=${encodeURIComponent(bounds.to)}`;
         const events = await apiRequest(`/sports/${league.key}/events${query}`, apiKey);
-        results.push(events.map((event) => normalizeMatch(event, league)));
+        return events.map((event) => normalizeMatch(event, league));
       } catch {
-        results.push([]);
+        return [];
       }
-    }
+    }));
     const value = {
       matches: results.flat().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff)),
       leagues: LEAGUES.map(({ key, ...league }) => ({ id: key, ...league })),
