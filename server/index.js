@@ -233,13 +233,15 @@ app.get('/api/football/matches', async (req, res) => {
 // Fetched odds are kept in Postgres (not just in-memory) so a re-deploy or
 // container restart doesn't throw away odds we already paid credits for.
 //
-// A day's odds stop being fetchable at all once every match that day has
-// kicked off — the API only lists upcoming events — so there's no point
-// treating a row as "fresh" (or keeping it around) past that day's last
-// possible kickoff plus a buffer for the match to finish.
+// A match's odds stop being fetchable at all once it has kicked off — the
+// API only lists upcoming events — so there's no point treating a row as
+// "fresh" (or keeping it around) past its actual last kickoff time plus a
+// buffer for that match to finish. One row covers a whole league/date, so
+// that cutoff is the latest commence_time among the events it holds, not
+// an assumed end of the calendar day.
 const ODDS_MARKETS = 'h2h,totals,btts,double_chance';
 const ODDS_REGION = 'eu';
-const ODDS_VALID_THROUGH = "date + interval '1 day 3 hours'";
+const MATCH_FINISH_BUFFER_MS = 3 * 60 * 60 * 1000;
 
 let oddsCacheTableReady = null;
 function ensureOddsCacheTable() {
@@ -250,7 +252,8 @@ function ensureOddsCacheTable() {
         league_key text not null,
         date date not null,
         payload jsonb not null,
-        fetched_at timestamptz not null default now()
+        fetched_at timestamptz not null default now(),
+        valid_until timestamptz not null
       )
     `);
   }
@@ -258,7 +261,7 @@ function ensureOddsCacheTable() {
 }
 
 function pruneExpiredOddsCache() {
-  return pool.query(`delete from odds_cache where ${ODDS_VALID_THROUGH} < now()`);
+  return pool.query('delete from odds_cache where valid_until < now()');
 }
 
 // Maps a bookmaker's markets onto the option keys used by pickTemplates.js
@@ -321,7 +324,7 @@ app.get('/api/football/odds', async (req, res) => {
     const cacheKey = `${league.key}:${date}`;
 
     const { rows } = await pool.query(
-      `select payload from odds_cache where cache_key = $1 and ${ODDS_VALID_THROUGH} > now()`,
+      'select payload from odds_cache where cache_key = $1 and valid_until > now()',
       [cacheKey]
     );
     const cached = rows[0];
@@ -343,11 +346,18 @@ app.get('/api/football/odds', async (req, res) => {
       bookmaker: event.bookmakers?.[0]?.title || null,
       prices: extractOutcomePrices(event),
     }));
+    // No events for this date (e.g. an off day) means there's nothing with a
+    // real kickoff time to key off — fall back to the end of the requested
+    // date so we don't just refetch on every click.
+    const lastKickoffMs = events.length > 0
+      ? Math.max(...events.map((event) => new Date(event.commence_time).getTime()))
+      : new Date(bounds.to).getTime();
+    const validUntil = new Date(lastKickoffMs + MATCH_FINISH_BUFFER_MS);
     await pool.query(
-      `insert into odds_cache (cache_key, league_key, date, payload, fetched_at)
-       values ($1, $2, $3, $4, now())
-       on conflict (cache_key) do update set payload = excluded.payload, fetched_at = excluded.fetched_at`,
-      [cacheKey, league.key, date, JSON.stringify(value)]
+      `insert into odds_cache (cache_key, league_key, date, payload, fetched_at, valid_until)
+       values ($1, $2, $3, $4, now(), $5)
+       on conflict (cache_key) do update set payload = excluded.payload, fetched_at = excluded.fetched_at, valid_until = excluded.valid_until`,
+      [cacheKey, league.key, date, JSON.stringify(value), validUntil]
     );
     const cost = usedBefore !== null && lastQuota.used !== null ? lastQuota.used - usedBefore : null;
     res.json({ events: value, quota: lastQuota, cost, cached: false });
