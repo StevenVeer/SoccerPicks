@@ -825,26 +825,37 @@ input:focus {
   gap: 7px;
 }
 .match-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  position: relative;
   background: rgba(10, 18, 16, 0.72);
   border: 1px solid rgba(244, 242, 232, 0.12);
   border-radius: 8px;
   color: var(--chalk);
-  cursor: pointer;
   padding: 10px;
-  text-align: left;
 }
-.match-item:hover:not(:disabled),
+.match-item:hover,
 .match-item.selected {
   border-color: var(--gold);
   background: rgba(232, 178, 61, 0.1);
 }
-.match-item:disabled {
-  cursor: not-allowed;
+.match-item.is-disabled {
   opacity: 0.5;
+}
+.match-item-select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding-right: 18px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.match-item-select:disabled {
+  cursor: not-allowed;
 }
 .match-item strong {
   font-size: 13px;
@@ -854,6 +865,29 @@ input:focus {
   color: var(--gold);
   font-size: 10px;
   text-transform: uppercase;
+}
+.match-item-sofascore {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: rgba(244, 242, 232, 0.4);
+  font-size: 12px;
+  text-decoration: none;
+  line-height: 1;
+}
+.match-item-sofascore:hover {
+  color: var(--gold);
+}
+.sofascore-link {
+  display: inline-block;
+  margin-top: 4px;
+  color: rgba(232, 178, 61, 0.75);
+  font-size: 11px;
+  text-decoration: none;
+}
+.sofascore-link:hover {
+  color: var(--gold);
+  text-decoration: underline;
 }
 .match-kickoff {
   color: rgba(244, 242, 232, 0.5);

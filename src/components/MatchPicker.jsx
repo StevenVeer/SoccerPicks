@@ -49,6 +49,10 @@ const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
   month: 'short',
 });
 
+function sofascoreSearchUrl(home, away) {
+  return `https://www.sofascore.com/search?q=${encodeURIComponent(`${home} ${away}`)}`;
+}
+
 function shiftDate(value, days) {
   const next = new Date(`${value}T12:00:00Z`);
   next.setUTCDate(next.getUTCDate() + days);
@@ -400,16 +404,31 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                 </div>
                 <div className="match-list">
                   {league.matches.map((match) => (
-                    <button
-                      type="button"
-                      className={`match-item${selectedMatch?.id === match.id ? ' selected' : ''}`}
+                    <div
+                      className={`match-item${selectedMatch?.id === match.id ? ' selected' : ''}${disabled ? ' is-disabled' : ''}`}
                       key={match.id}
-                      onClick={() => selectMatch(match)}
-                      disabled={disabled}
                     >
-                      <span className="match-kickoff">{dateFormatter.format(new Date(match.kickoff))}</span>
-                      <strong>{match.home} <span>vs</span> {match.away}</strong>
-                    </button>
+                      <button
+                        type="button"
+                        className="match-item-select"
+                        onClick={() => selectMatch(match)}
+                        disabled={disabled}
+                      >
+                        <span className="match-kickoff">{dateFormatter.format(new Date(match.kickoff))}</span>
+                        <strong>{match.home} <span>vs</span> {match.away}</strong>
+                      </button>
+                      <a
+                        className="match-item-sofascore"
+                        href={sofascoreSearchUrl(match.home, match.away)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        aria-label="Bekijk op Sofascore"
+                        title="Bekijk op Sofascore"
+                      >
+                        ↗
+                      </a>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -422,6 +441,14 @@ export default function MatchPicker({ picks, onAddPick, disabled }) {
                 <div>
                   <span className="section-kicker">Picks</span>
                   <h3>{selectedMatch.home} vs {selectedMatch.away}</h3>
+                  <a
+                    className="sofascore-link"
+                    href={sofascoreSearchUrl(selectedMatch.home, selectedMatch.away)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Bekijk op Sofascore ↗
+                  </a>
                 </div>
                 <div className="odds-fetch-control">
                   <button type="button" className="fetch-odds-button" onClick={fetchOdds} disabled={oddsLoading}>
